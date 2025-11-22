@@ -1,0 +1,232 @@
+{
+  "project_handoff": {
+    "project_name": "Spedire Sicuro Platform",
+    "repository": "https://github.com/gdsgroupsas-jpg/spedire-sicuro-platform",
+    "current_branch": "claude/complete-analysis-012Yf2fumEmo74AGsbTPoNC8",
+    "production_url": "https://spedire-sicuro.vercel.app/",
+    "language": "it"
+  },
+
+  "project_description": {
+    "summary": "Piattaforma React per la revisione e approvazione di documenti con Firebase",
+    "features": [
+      "Upload file convertiti in base64 e salvati su Firestore",
+      "Vista revisore per approvare/rifiutare documenti",
+      "Storico caricamenti personali con stato revisione",
+      "Autenticazione Firebase anonima o con custom token",
+      "UI responsive con Tailwind CSS"
+    ],
+    "tech_stack": {
+      "frontend": "React 18",
+      "build_tool": "Vite 5",
+      "styling": "Tailwind CSS 3.4",
+      "backend": "Firebase (Firestore + Auth)",
+      "deployment": "Vercel"
+    }
+  },
+
+  "current_status": {
+    "completion_percentage": 70,
+    "build_status": "incomplete",
+    "can_run": false,
+    "reason": "Manca configurazione Firebase reale"
+  },
+
+  "files_structure": {
+    "created_files": [
+      {
+        "path": "package.json",
+        "description": "Dipendenze React, Firebase, Tailwind, Vite"
+      },
+      {
+        "path": "vite.config.js",
+        "description": "Configurazione Vite per build"
+      },
+      {
+        "path": "index.html",
+        "description": "Entry point HTML"
+      },
+      {
+        "path": "src/main.jsx",
+        "description": "Entry point React"
+      },
+      {
+        "path": "src/index.css",
+        "description": "Stili Tailwind base"
+      },
+      {
+        "path": "tailwind.config.js",
+        "description": "Configurazione Tailwind"
+      },
+      {
+        "path": "postcss.config.js",
+        "description": "Configurazione PostCSS"
+      },
+      {
+        "path": ".gitignore",
+        "description": "File da ignorare in git"
+      },
+      {
+        "path": "src/components/ReviewApp.jsx",
+        "description": "Componente principale dell'applicazione (395 righe)"
+      }
+    ],
+    "missing_files": [
+      {
+        "path": ".env",
+        "description": "Variabili d'ambiente per Firebase config",
+        "required": true
+      },
+      {
+        "path": "public/vite.svg",
+        "description": "Favicon",
+        "required": false
+      }
+    ]
+  },
+
+  "critical_issues": [
+    {
+      "id": 1,
+      "severity": "critical",
+      "title": "Configurazione Firebase mancante",
+      "description": "Le variabili __app_id, __firebase_config, __initial_auth_token non sono definite",
+      "file": "src/components/ReviewApp.jsx",
+      "lines": "17-19",
+      "solution": "Creare configurazione Firebase reale o usare variabili d'ambiente"
+    },
+    {
+      "id": 2,
+      "severity": "high",
+      "title": "File salvati come Base64 in Firestore",
+      "description": "Performance e costi elevati, limite 1MB per documento",
+      "file": "src/components/ReviewApp.jsx",
+      "lines": "152-167",
+      "solution": "Usare Firebase Storage invece di salvare base64 in Firestore"
+    },
+    {
+      "id": 3,
+      "severity": "medium",
+      "title": "Nessuna validazione file",
+      "description": "UI dice max 1MB ma non c'è controllo dimensione o tipo",
+      "file": "src/components/ReviewApp.jsx",
+      "lines": "134-143",
+      "solution": "Aggiungere validazione dimensione e tipo MIME"
+    },
+    {
+      "id": 4,
+      "severity": "low",
+      "title": "Manipolazione DOM diretta",
+      "description": "Usa document.getElementById invece di React ref",
+      "file": "src/components/ReviewApp.jsx",
+      "line": 171,
+      "solution": "Usare useRef per gestire l'input file"
+    },
+    {
+      "id": 5,
+      "severity": "low",
+      "title": "Markdown in JSX",
+      "description": "**ID Utente:** non viene renderizzato come bold",
+      "file": "src/components/ReviewApp.jsx",
+      "lines": "241, 336",
+      "solution": "Usare tag <strong> invece di asterischi"
+    },
+    {
+      "id": 6,
+      "severity": "low",
+      "title": "Drag & Drop non implementato",
+      "description": "UI suggerisce drag & drop ma funzionalità non esiste",
+      "file": "src/components/ReviewApp.jsx",
+      "line": 227,
+      "solution": "Implementare onDrop e onDragOver handlers"
+    }
+  ],
+
+  "tasks_todo": [
+    {
+      "priority": 1,
+      "task": "Configurare Firebase",
+      "description": "Creare progetto Firebase e configurare credenziali",
+      "subtasks": [
+        "Creare progetto su Firebase Console",
+        "Abilitare Authentication (Anonymous)",
+        "Creare database Firestore",
+        "Copiare firebaseConfig nel codice",
+        "Configurare regole Firestore"
+      ]
+    },
+    {
+      "priority": 2,
+      "task": "Merge nel branch principale",
+      "description": "Creare PR e fare merge per deploy su Vercel",
+      "subtasks": [
+        "Creare Pull Request",
+        "Verificare build Vercel",
+        "Merge nel main branch"
+      ]
+    },
+    {
+      "priority": 3,
+      "task": "Migrare a Firebase Storage",
+      "description": "Sostituire salvataggio base64 con Firebase Storage",
+      "subtasks": [
+        "Configurare Firebase Storage",
+        "Modificare handleUploadSubmit per usare Storage",
+        "Aggiornare lettura file nella vista revisore"
+      ]
+    },
+    {
+      "priority": 4,
+      "task": "Aggiungere validazione file",
+      "description": "Validare dimensione e tipo file prima dell'upload",
+      "subtasks": [
+        "Controllare file.size <= 1MB",
+        "Verificare tipo MIME consentito",
+        "Mostrare errori appropriati"
+      ]
+    },
+    {
+      "priority": 5,
+      "task": "Fix problemi minori",
+      "description": "Risolvere antipattern e miglioramenti UX",
+      "subtasks": [
+        "Usare useRef per input file",
+        "Sostituire ** con <strong>",
+        "Implementare drag & drop"
+      ]
+    }
+  ],
+
+  "firebase_config_template": {
+    "instructions": "Sostituire questi valori con quelli del tuo progetto Firebase",
+    "config": {
+      "apiKey": "YOUR_API_KEY",
+      "authDomain": "YOUR_PROJECT.firebaseapp.com",
+      "projectId": "YOUR_PROJECT_ID",
+      "storageBucket": "YOUR_PROJECT.appspot.com",
+      "messagingSenderId": "YOUR_SENDER_ID",
+      "appId": "YOUR_APP_ID"
+    },
+    "where_to_add": "src/components/ReviewApp.jsx linee 17-19"
+  },
+
+  "firestore_rules_template": {
+    "description": "Regole base per Firestore (da personalizzare per sicurezza)",
+    "rules": "rules_version = '2';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n    match /artifacts/{appId}/public/data/{collection}/{document} {\n      allow read, write: if request.auth != null;\n    }\n  }\n}"
+  },
+
+  "commands": {
+    "install": "npm install",
+    "dev": "npm run dev",
+    "build": "npm run build",
+    "preview": "npm run preview"
+  },
+
+  "notes_for_ai": [
+    "Il progetto usa variabili globali __app_id, __firebase_config che devono essere iniettate",
+    "La struttura Firestore è: artifacts/{appId}/public/data/review_items/{docId}",
+    "L'autenticazione supporta sia anonima che custom token",
+    "Tailwind è configurato ma richiede npm install per funzionare",
+    "Vercel dovrebbe fare auto-deploy quando si fa merge nel main"
+  ]
+}
