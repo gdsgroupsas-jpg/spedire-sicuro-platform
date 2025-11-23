@@ -187,7 +187,39 @@ export type Database = {
         Relationships: []
       }
     }
-    Views: Record<string, never>
+    Views: {
+      client_shipments_view: {
+        Row: {
+          id: string
+          created_at: string | null
+          user_id: string | null
+          tenant_id: string | null
+          destinatario: string
+          indirizzo: string
+          cap: string
+          localita: string
+          provincia: string
+          country: string | null
+          peso: number
+          colli: number | null
+          contrassegno: number | null
+          telefono: string | null
+          email_destinatario: string | null
+          contenuto: string | null
+          order_id: string | null
+          rif_mittente: string | null
+          rif_destinatario: string | null
+          note: string | null
+          corriere_scelto: string | null
+          servizio_scelto: string | null
+          prezzo_finale: number | null
+          immagine_url: string | null
+          mittente_nome: string | null
+          mittente_citta: string | null
+          status: string | null
+        }
+      }
+    }
     Functions: Record<string, never>
     Enums: Record<string, never>
     CompositeTypes: Record<string, never>

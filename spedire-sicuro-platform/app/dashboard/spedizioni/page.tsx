@@ -31,8 +31,8 @@ export default function SpedizioniListPage() {
     setLoading(true)
     try {
       const { data, error } = await supabase
-        .from('spedizioni')
-        .select('id, created_at, destinatario, indirizzo, cap, localita, provincia, peso, colli, contrassegno, corriere_scelto, servizio_scelto, mittente_nome, mittente_citta')
+        .from('client_shipments_view')
+        .select('*')
         .order('created_at', { ascending: false })
       
       if (error) throw error

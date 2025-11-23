@@ -48,8 +48,7 @@ export async function PUT(req: NextRequest) {
     if (dati_listino) updateData.dati_listino = dati_listino
     if (regole_contrassegno !== undefined) updateData.regole_contrassegno = regole_contrassegno
 
-    const { data, error } = await supabase
-      .from('listini_corrieri')
+    const { data, error } = await (supabase.from('listini_corrieri') as any)
       .update(updateData)
       .eq('id', id)
       .select()

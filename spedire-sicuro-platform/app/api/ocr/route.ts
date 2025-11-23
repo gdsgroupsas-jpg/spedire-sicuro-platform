@@ -35,6 +35,30 @@ export async function POST(req: NextRequest) {
   }
 
   console.log('[OCR] Utente autenticato:', user.id)
+
+  // RATE LIMITING (Stub/Preparation)
+  try {
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('calls_remaining')
+      .eq('id', user.id)
+      .single()
+
+    if (!profileError && profile) {
+      if (profile.calls_remaining < 1) {
+        console.warn(`[OCR] Rate limit exceeded for user ${user.id}`)
+        return NextResponse.json(
+          { error: 'Limite chiamate OCR superato. Contatta il supporto.' },
+          { status: 429 }
+        )
+      }
+      // Opzionale: Decrementa
+      // await supabase.rpc('decrement_calls', { user_id: user.id })
+    }
+  } catch (limitError) {
+    console.warn('[OCR] Rate limit check skipped (table profiles not ready?)', limitError)
+  }
+
   console.log('[OCR] Content-Type:', req.headers.get('content-type'))
   
   try {
@@ -298,8 +322,7 @@ REGOLE:
     
     // Salva su Supabase
     console.log('[OCR] Salvataggio su Supabase...')
-    const { data: spedizione, error: dbError } = await supabase
-      .from('spedizioni')
+    const { data: spedizione, error: dbError } = await (supabase.from('spedizioni') as any)
       .insert([
         {
           ...extracted,

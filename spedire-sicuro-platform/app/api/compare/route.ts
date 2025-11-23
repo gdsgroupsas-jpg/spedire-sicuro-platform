@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
     }))
 
     // Log operazione
-    await supabase.from('log_operazioni').insert([
+    await (supabase.from('log_operazioni') as any).insert([
       {
         tipo: 'COMPARE',
         dettagli: {

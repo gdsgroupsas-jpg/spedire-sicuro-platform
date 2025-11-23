@@ -218,8 +218,7 @@ export async function POST(request: NextRequest) {
       attivo: true
     }
 
-    const insertResult: PostgrestSingleResponse<ListinoRow> = await client
-      .from('listini_corrieri')
+    const insertResult: PostgrestSingleResponse<ListinoRow> = await (client.from('listini_corrieri') as any)
       .insert([payload])
       .select()
       .single()
