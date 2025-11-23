@@ -485,47 +485,41 @@ const PriceListCard = ({
       </AnimatePresence>
 
       {/* Expandable Content */}
-      <AnimatePresence>
-        {expanded && (
-          <motion.div 
-            initial={{ height: 0, opacity: 0 }} 
-            animate={{ height: 'auto', opacity: 1 }} 
-            exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden bg-slate-50/30"
-          >
-            <div className="p-5">
-              <div className="mb-4 flex items-center justify-between">
-                 <h4 className="font-semibold text-slate-800 flex items-center gap-2">
-                   <BarChart className="h-4 w-4 text-yellow-600" />
-                   Tabella Prezzi
-                 </h4>
-                 <span className="text-xs text-slate-500 bg-white px-2 py-1 rounded border shadow-sm">
-                   Tutti i prezzi sono in Euro (€)
-                 </span>
-              </div>
-              <PricingTable data={listino.dati_listino} />
-              
-              {/* Mobile actions that appear only when expanded */}
-              <div className="mt-6 flex gap-3 sm:hidden border-t pt-4">
-                 <Button 
-                   variant="outline" 
-                   className="flex-1"
-                   onClick={onStatusToggle}
-                 >
-                   {listino.attivo ? 'Disattiva' : 'Attiva'}
-                 </Button>
-                 <Button 
-                   variant="destructive" 
-                   className="flex-1"
-                   onClick={onDelete}
-                 >
-                   Elimina
-                 </Button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <div className={cn(
+        "overflow-hidden transition-all duration-300 ease-in-out",
+        expanded ? "max-h-[2000px] opacity-100 border-t border-slate-100" : "max-h-0 opacity-0"
+      )}>
+        <div className="p-5 bg-slate-50/30">
+          <div className="mb-4 flex items-center justify-between">
+             <h4 className="font-semibold text-slate-800 flex items-center gap-2">
+               <BarChart className="h-4 w-4 text-yellow-600" />
+               Tabella Prezzi
+             </h4>
+             <span className="text-xs text-slate-500 bg-white px-2 py-1 rounded border shadow-sm">
+               Tutti i prezzi sono in Euro (€)
+             </span>
+          </div>
+          <PricingTable data={listino.dati_listino} />
+          
+          {/* Mobile actions that appear only when expanded */}
+          <div className="mt-6 flex gap-3 sm:hidden border-t pt-4">
+             <Button 
+               variant="outline" 
+               className="flex-1"
+               onClick={onStatusToggle}
+             >
+               {listino.attivo ? 'Disattiva' : 'Attiva'}
+             </Button>
+             <Button 
+               variant="destructive" 
+               className="flex-1"
+               onClick={onDelete}
+             >
+               Elimina
+             </Button>
+          </div>
+        </div>
+      </div>
       
       <Button 
         variant="ghost" 
