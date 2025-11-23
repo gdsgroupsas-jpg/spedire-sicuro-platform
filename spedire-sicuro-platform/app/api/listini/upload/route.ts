@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient, type PostgrestSingleResponse } from '@supabase/supabase-js'
+import type { Database, TablesInsert, Tables } from '@/lib/database.types'
 
 // Inizializza Supabase client
-let supabase: ReturnType<typeof createClient> | null = null
+let supabase: SupabaseClient<Database> | null = null
 
-function getSupabaseClient() {
+function getSupabaseClient(): SupabaseClient<Database> {
   if (!supabase) {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL
     const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -88,149 +89,171 @@ export async function POST(request: NextRequest) {
     }
 
     // Leggi contenuto file
-    console.log('[UPLOAD] Lettura file CSV...')
-    const text = await file.text()
-    console.log('[UPLOAD] File letto, dimensione:', text.length, 'caratteri')
-    console.log('[UPLOAD] Prime 200 caratteri:', text.substring(0, 200))
-    
-    // Parse CSV (separatore ;)
-    const lines = text.trim().split('\n').filter(line => line.trim())
-    console.log('[UPLOAD] Righe CSV trovate:', lines.length)
-    
-    if (lines.length < 2) {
-      console.error('[UPLOAD] CSV troppo corto, almeno 2 righe richieste')
-      return NextResponse.json(
-        { error: 'CSV deve contenere almeno header e una riga dati' },
-        { status: 400 }
-      )
-    }
-    
-    const headers = lines[0].split(';').map(h => h.trim().toLowerCase())
-    console.log('[UPLOAD] Headers trovati:', headers)
-    
-    // Verifica headers base (case insensitive)
-    if (!headers.includes('peso_min') || !headers.includes('peso_max')) {
-      console.error('[UPLOAD] Headers mancanti. Headers trovati:', headers)
-      return NextResponse.json(
-        { 
-          error: 'CSV deve contenere almeno: peso_min;peso_max',
-          headers_trovati: headers
-        },
-        { status: 400 }
-      )
-    }
-
-    // Parse fasce peso
-    console.log('[UPLOAD] Parsing fasce peso...')
-    const fasce = []
-    
-    for (let i = 1; i < lines.length; i++) {
-      const line = lines[i].trim()
-      if (!line) continue
+      console.log('[UPLOAD] Lettura file CSV...')
+      const text = await file.text()
+      console.log('[UPLOAD] File letto, dimensione:', text.length, 'caratteri')
+      console.log('[UPLOAD] Prime 200 caratteri:', text.substring(0, 200))
       
-      const values = line.split(';').map(v => v.trim().replace(',', '.'))
-      const row: any = {}
+      // Parse CSV (separatore ;)
+      const lines = text.trim().split('\n').filter(line => line.trim())
+      console.log('[UPLOAD] Righe CSV trovate:', lines.length)
       
-      // Mappa valori agli headers (case insensitive)
-      headers.forEach((header, index) => {
-        row[header] = values[index] || ''
-      })
-      
-      // Estrai peso min/max
-      const pesoMin = parseFloat(row.peso_min || '0')
-      const pesoMax = parseFloat(row.peso_max || '0')
-      
-      if (isNaN(pesoMin) || isNaN(pesoMax)) {
-        console.warn(`[UPLOAD] Riga ${i} saltata: peso non valido`)
-        continue
+      if (lines.length < 2) {
+        console.error('[UPLOAD] CSV troppo corto, almeno 2 righe richieste')
+        return NextResponse.json(
+          { error: 'CSV deve contenere almeno header e una riga dati' },
+          { status: 400 }
+        )
       }
       
-      // Estrai prezzi per zone (tutto tranne peso_min e peso_max)
-      const prezzi: any = {}
+      const headers = lines[0].split(';').map(h => h.trim().toLowerCase())
+      console.log('[UPLOAD] Headers trovati:', headers)
       
-      headers.forEach(header => {
-        if (header !== 'peso_min' && header !== 'peso_max') {
-          const prezzo = parseFloat(row[header] || '0')
-          if (!isNaN(prezzo) && prezzo > 0) {
-            prezzi[header] = prezzo
-          }
+      // Verifica headers base (case insensitive)
+      if (!headers.includes('peso_min') || !headers.includes('peso_max')) {
+        console.error('[UPLOAD] Headers mancanti. Headers trovati:', headers)
+        return NextResponse.json(
+          { 
+            error: 'CSV deve contenere almeno: peso_min;peso_max',
+            headers_trovati: headers
+          },
+          { status: 400 }
+        )
+      }
+
+      // Parse fasce peso
+      console.log('[UPLOAD] Parsing fasce peso...')
+      type FasciaPeso = {
+        peso_min: number
+        peso_max: number
+        prezzi: Record<string, number>
+      }
+
+      const fasce: FasciaPeso[] = []
+      
+      type ListinoRow = Tables<'listini_corrieri'>
+
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim()
+        if (!line) continue
+        
+        const values = line.split(';').map(v => v.trim().replace(',', '.'))
+        const row: Record<string, string> = {}
+        
+        // Mappa valori agli headers (case insensitive)
+        headers.forEach((header, index) => {
+          row[header] = values[index] || ''
+        })
+        
+        // Estrai peso min/max
+        const pesoMin = parseFloat(row.peso_min || '0')
+        const pesoMax = parseFloat(row.peso_max || '0')
+        
+        if (isNaN(pesoMin) || isNaN(pesoMax)) {
+          console.warn(`[UPLOAD] Riga ${i} saltata: peso non valido`)
+          continue
         }
-      })
-      
-      fasce.push({
-        peso_min: pesoMin,
-        peso_max: pesoMax,
-        prezzi: prezzi
-      })
-      
-      console.log(`[UPLOAD] Fascia ${i}: ${pesoMin}-${pesoMax}kg, zone:`, Object.keys(prezzi))
-    }
-    
-    console.log('[UPLOAD] Fasce totali parse:', fasce.length)
-
-    // Crea oggetto listino
-    const datiListino = {
-      tipo_listino: 'fasce_peso',
-      fasce: fasce,
-      iva_inclusa: false,
-      note: `Caricato il ${new Date().toLocaleDateString('it-IT')}`
-    }
-
-    // Zone coperte (dalle colonne del CSV)
-    const zoneCoperte = headers.filter(
-      h => h !== 'peso_min' && h !== 'peso_max'
-    )
-
-    // Peso min/max totale
-    const pesoMin = Math.min(...fasce.map((f: any) => f.peso_min))
-    const pesoMax = Math.max(...fasce.map((f: any) => f.peso_max))
-
-    console.log('[UPLOAD] Dati listino preparati:', {
-      tipo: datiListino.tipo_listino,
-      fasce_count: fasce.length,
-      zone: zoneCoperte,
-      peso_range: `${pesoMin}-${pesoMax}kg`
-    })
-
-    // Inserisci su Supabase
-    console.log('[UPLOAD] Inserimento in Supabase...')
-    const client = getSupabaseClient()
-    
-    // @ts-ignore - Supabase types not generated for listini_corrieri
-    const insertResult = await (client
-      .from('listini_corrieri')
-      .insert([
-        {
-          fornitore: fornitore.trim(),
-          servizio: servizio.trim(),
-          file_originale: file.name,
-          dati_listino: datiListino,
-          zone_coperte: zoneCoperte,
+        
+        // Estrai prezzi per zone (tutto tranne peso_min e peso_max)
+        const prezzi: Record<string, number> = {}
+        
+        headers.forEach(header => {
+          if (header !== 'peso_min' && header !== 'peso_max') {
+            const prezzo = parseFloat(row[header] || '0')
+            if (!isNaN(prezzo) && prezzo > 0) {
+              prezzi[header] = prezzo
+            }
+          }
+        })
+        
+        fasce.push({
           peso_min: pesoMin,
           peso_max: pesoMax,
-          attivo: true
-        }
-      ])
-      .select()
-      .single() as any)
-    
-    const data = insertResult.data as any
-    const error = insertResult.error as any
+          prezzi
+        })
+        
+        console.log(`[UPLOAD] Fascia ${i}: ${pesoMin}-${pesoMax}kg, zone:`, Object.keys(prezzi))
+      }
+      
+      console.log('[UPLOAD] Fasce totali parse:', fasce.length)
 
-    if (error) {
-      console.error('[UPLOAD] Errore Supabase:', error)
-      console.error('[UPLOAD] Dettagli errore:', JSON.stringify(error, null, 2))
-      return NextResponse.json(
-        { 
-          error: `Errore database: ${error.message}`,
-          code: error.code,
-          details: error.details
-        },
-        { status: 500 }
+      if (fasce.length === 0) {
+        console.error('[UPLOAD] Nessuna fascia valida trovata nel CSV')
+        return NextResponse.json(
+          { error: 'CSV non contiene fasce di prezzo valide' },
+          { status: 400 }
+        )
+      }
+
+      // Crea oggetto listino
+      const datiListino = {
+        tipo_listino: 'fasce_peso',
+        fasce,
+        iva_inclusa: false,
+        note: `Caricato il ${new Date().toLocaleDateString('it-IT')}`
+      } satisfies TablesInsert<'listini_corrieri'>['dati_listino']
+
+      // Zone coperte (dalle colonne del CSV)
+      const zoneCoperte = headers.filter(
+        h => h !== 'peso_min' && h !== 'peso_max'
       )
-    }
 
-    console.log('[UPLOAD] Listino inserito con successo, ID:', data.id)
+      // Peso min/max totale
+      const pesoMinGenerale = Math.min(...fasce.map(f => f.peso_min))
+      const pesoMaxGenerale = Math.max(...fasce.map(f => f.peso_max))
+
+      console.log('[UPLOAD] Dati listino preparati:', {
+        tipo: datiListino.tipo_listino,
+        fasce_count: fasce.length,
+        zone: zoneCoperte,
+        peso_range: `${pesoMinGenerale}-${pesoMaxGenerale}kg`
+      })
+
+      // Inserisci su Supabase
+      console.log('[UPLOAD] Inserimento in Supabase...')
+      const client = getSupabaseClient()
+      
+      const payload: TablesInsert<'listini_corrieri'> = {
+        fornitore: fornitore.trim(),
+        servizio: servizio.trim(),
+        file_originale: file.name,
+        dati_listino: datiListino,
+        zone_coperte: zoneCoperte,
+        peso_min: pesoMinGenerale,
+        peso_max: pesoMaxGenerale,
+        attivo: true
+      }
+
+      const insertResult: PostgrestSingleResponse<ListinoRow> = await client
+        .from('listini_corrieri')
+        .insert([payload])
+        .select()
+        .single()
+      
+      const { data, error } = insertResult
+
+      if (error) {
+        console.error('[UPLOAD] Errore Supabase:', error)
+        console.error('[UPLOAD] Dettagli errore:', JSON.stringify(error, null, 2))
+        return NextResponse.json(
+          { 
+            error: `Errore database: ${error.message}`,
+            code: error.code,
+            details: error.details
+          },
+          { status: 500 }
+        )
+      }
+
+      if (!data) {
+        console.error('[UPLOAD] Risposta Supabase senza payload dati')
+        return NextResponse.json(
+          { error: 'Inserimento completato ma nessun dato restituito' },
+          { status: 500 }
+        )
+      }
+
+      console.log('[UPLOAD] Listino inserito con successo, ID:', data.id)
 
     return NextResponse.json({
       success: true,
@@ -241,7 +264,7 @@ export async function POST(request: NextRequest) {
         servizio: data.servizio,
         fasce_count: fasce.length,
         zone: zoneCoperte,
-        peso_range: `${pesoMin}-${pesoMax}kg`
+          peso_range: `${pesoMinGenerale}-${pesoMaxGenerale}kg`
       }
     }, {
       status: 200,
