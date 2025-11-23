@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Upload, Loader2, Trash2, Eye, EyeOff, ChevronDown, Search, Filter, Package, Truck, Box, Plus, BarChart } from 'lucide-react'
+import { Upload, Loader2, Trash2, Eye, EyeOff, ChevronDown, Search, Filter, Package, Truck, Box, Plus, BarChart, Award, AlertTriangle, FileText } from 'lucide-react'
 import { ListinoCorriere } from '@/lib/types'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
@@ -117,6 +117,71 @@ const PricingTable = ({ data }: { data: any }) => {
   )
 }
 
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
+
+// --- Helpers ---
+
+const generatePDF = (listino: ListinoCorriere) => {
+  const doc = new jsPDF()
+  
+  // Add Logo Placeholder or Text
+  doc.setFontSize(20)
+  doc.setTextColor(234, 179, 8) // Yellow-500
+  doc.text('Spedire Sicuro', 14, 22)
+  
+  doc.setFontSize(12)
+  doc.setTextColor(100)
+  doc.text(`Listino: ${listino.fornitore} - ${listino.servizio}`, 14, 32)
+  doc.text(`Data: ${new Date(listino.created_at).toLocaleDateString('it-IT')}`, 14, 38)
+  
+  // Table Data
+  const tableColumn = ["Fascia Peso", ...listino.zone_coperte]
+  const tableRows = listino.dati_listino.fasce.map((fascia: any) => {
+    const row = [`${fascia.peso_min}-${fascia.peso_max} kg`]
+    listino.zone_coperte.forEach(zone => {
+      const price = fascia.prezzi[zone]
+      row.push(price ? `€ ${Number(price).toFixed(2)}` : '-')
+    })
+    return row
+  })
+
+  autoTable(doc, {
+    head: [tableColumn],
+    body: tableRows,
+    startY: 45,
+    theme: 'grid',
+    headStyles: { fillColor: [234, 179, 8], textColor: 255 },
+    alternateRowStyles: { fillColor: [249, 250, 251] },
+  })
+
+  doc.save(`${listino.fornitore}_${listino.servizio}_Listino.pdf`)
+}
+
+const UsageStatsBadge = ({ usageCount }: { usageCount: number }) => {
+  if (usageCount === 0) return null;
+  
+  return (
+    <div className="flex items-center gap-1 bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full text-xs border border-amber-100 shadow-sm">
+      <Award className="h-3 w-3 text-amber-500" />
+      <span className="font-semibold">Scelto {usageCount} volte</span>
+    </div>
+  )
+}
+
+const OutdatedAlert = ({ date }: { date: string }) => {
+  const daysDiff = Math.floor((new Date().getTime() - new Date(date).getTime()) / (1000 * 3600 * 24));
+  
+  if (daysDiff < 30) return null;
+
+  return (
+    <div className="flex items-center gap-1 text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full text-xs border border-orange-100" title="Listino vecchio di oltre 30 giorni, controlla i prezzi">
+      <AlertTriangle className="h-3 w-3" />
+      <span className="font-medium">Obsoleto ({daysDiff}gg)</span>
+    </div>
+  )
+}
+
 const PriceListCard = ({ 
   listino, 
   expanded, 
@@ -130,6 +195,9 @@ const PriceListCard = ({
   onDelete: () => void,
   onStatusToggle: () => void
 }) => {
+  // Mock usage stats based on ID char code sum (deterministic mock)
+  const mockUsage = (listino.id.charCodeAt(0) + listino.id.charCodeAt(listino.id.length - 1)) % 150;
+  
   return (
     <motion.div 
       layout 
@@ -147,12 +215,25 @@ const PriceListCard = ({
           <div className="flex items-center gap-4">
             <CarrierLogo carrier={listino.fornitore} />
             <div>
-              <h3 className="font-bold text-lg text-slate-800 leading-tight">{listino.fornitore}</h3>
+              <div className="flex items-center gap-2">
+                <h3 className="font-bold text-lg text-slate-800 leading-tight">{listino.fornitore}</h3>
+                <UsageStatsBadge usageCount={mockUsage} />
+                <OutdatedAlert date={listino.created_at} />
+              </div>
               <p className="text-sm text-slate-500 font-medium">{listino.servizio}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
              <StatusBadge active={listino.attivo} />
+             <Button 
+               variant="ghost" 
+               size="icon"
+               onClick={(e) => { e.stopPropagation(); generatePDF(listino); }}
+               className="text-slate-400 hover:text-blue-600 hover:bg-blue-50 hidden sm:flex"
+               title="Scarica PDF"
+             >
+                <FileText className="h-4 w-4" />
+             </Button>
              <div className="h-8 w-px bg-slate-200 mx-1 hidden sm:block"></div>
              <Button 
                variant="ghost" 
