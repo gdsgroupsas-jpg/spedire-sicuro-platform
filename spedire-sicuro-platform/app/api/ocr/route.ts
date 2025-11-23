@@ -2,15 +2,21 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@supabase/supabase-js'
 
-// Inizializza client
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY!,
-})
+// Inizializza client con controllo variabili
+let anthropic: Anthropic | null = null
+if (process.env.ANTHROPIC_API_KEY) {
+  anthropic = new Anthropic({
+    apiKey: process.env.ANTHROPIC_API_KEY,
+  })
+}
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+let supabase: ReturnType<typeof createClient> | null = null
+if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+  supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  )
+}
 
 export async function POST(req: NextRequest) {
   console.log('[OCR] POST request ricevuta')
@@ -98,6 +104,15 @@ export async function POST(req: NextRequest) {
     
     // Call Claude Vision API
     console.log('[OCR] Chiamata a Claude Vision API...')
+    
+    if (!anthropic) {
+      console.error('[OCR] Anthropic client non inizializzato')
+      return NextResponse.json(
+        { error: 'API Anthropic non configurata' },
+        { status: 500 }
+      )
+    }
+    
     const message = await (anthropic as any).messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 2000,
@@ -245,20 +260,31 @@ REGOLE:
     
     // Salva su Supabase
     console.log('[OCR] Salvataggio su Supabase...')
-    const { data: spedizione, error: dbError } = await supabase
-      .from('spedizioni')
-      .insert([
-        {
-          ...extracted,
-          dati_ocr: extracted,
-          confronto_prezzi: comparison,
-          peso: Number(extracted.peso),
-          colli: Number(extracted.colli || 1),
-          contrassegno: Number(extracted.contrassegno || 0),
-        },
-      ])
-      .select()
-      .single()
+    
+    let spedizione: any = null
+    let dbError: any = null
+    
+    if (supabase) {
+      const result = await supabase
+        .from('spedizioni')
+        .insert([
+          {
+            ...extracted,
+            dati_ocr: extracted,
+            confronto_prezzi: comparison,
+            peso: Number(extracted.peso),
+            colli: Number(extracted.colli || 1),
+            contrassegno: Number(extracted.contrassegno || 0),
+          },
+        ] as any)
+        .select()
+        .single()
+      
+      spedizione = result.data
+      dbError = result.error
+    } else {
+      console.warn('[OCR] Supabase non configurato, salto salvataggio')
+    }
     
     if (dbError) {
       console.error('[OCR] Errore Supabase:', dbError)
@@ -269,7 +295,8 @@ REGOLE:
     
     // Log operazione
     try {
-      await supabase.from('log_operazioni').insert([
+      if (supabase) {
+        await supabase.from('log_operazioni').insert([
         {
           tipo: 'OCR',
           dettagli: {
@@ -280,7 +307,8 @@ REGOLE:
           },
           esito: dbError ? 'error' : 'success',
         },
-      ])
+      ] as any)
+      }
     } catch (logError) {
       console.warn('[OCR] Errore log operazione (non bloccante):', logError)
     }

@@ -1,10 +1,18 @@
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from './database.types'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey)
+// Crea client solo se le variabili sono configurate
+let supabaseClient: ReturnType<typeof createClient<Database>> | null = null
+
+if (supabaseUrl && supabaseAnonKey) {
+  supabaseClient = createClient<Database>(supabaseUrl, supabaseAnonKey)
+}
+
+// Export con fallback per evitare errori a build time
+export const supabase = supabaseClient || ({} as ReturnType<typeof createClient<Database>>)
 
 // Database Types
 export type Tenant = {
