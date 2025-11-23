@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, type SupabaseClient, type PostgrestSingleResponse } from '@supabase/supabase-js'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 import type { Database, TablesInsert, Tables } from '@/lib/database.types'
 
 // Inizializza Admin Supabase client (Singleton)
@@ -25,6 +27,51 @@ function getSupabaseAdminClient(): SupabaseClient<Database> {
   return supabaseAdmin
 }
 
+async function checkAdminAuth(request: NextRequest) {
+  const cookieStore = cookies()
+  
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          try {
+            cookieStore.set({ name, value, ...options })
+          } catch (error) {
+            // The `set` method was called from a Server Component.
+            // This can be ignored if you have middleware refreshing
+            // user sessions.
+          }
+        },
+        remove(name: string, options: CookieOptions) {
+          try {
+            cookieStore.set({ name, value: '', ...options })
+          } catch (error) {
+            // The `delete` method was called from a Server Component.
+            // This can be ignored if you have middleware refreshing
+            // user sessions.
+          }
+        },
+      },
+    }
+  )
+
+  const { data: { user }, error } = await supabase.auth.getUser()
+  
+  if (error || !user) {
+    return false
+  }
+
+  // Controlla se l'email è autorizzata come admin
+  // In produzione, questo dovrebbe essere un check sul database (tabella profiles o roles)
+  const ADMIN_EMAILS = ['admin@spediresicuro.com', 'info@gdsgroup.it', 'gdsgroupsas@gmail.com'] 
+  return ADMIN_EMAILS.includes(user.email || '')
+}
+
 // GET method per test (solo environment check)
 export async function GET() {
   try {
@@ -40,6 +87,16 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   console.log('[UPLOAD] POST request ricevuta')
+  
+  // 1. Security Check: Authentication & Role
+  const isAdmin = await checkAdminAuth(request)
+  if (!isAdmin) {
+    console.warn('[UPLOAD] Tentativo di accesso non autorizzato')
+    return NextResponse.json(
+      { error: 'Unauthorized: Solo gli amministratori possono caricare listini' },
+      { status: 403 }
+    )
+  }
   
   try {
     const client = getSupabaseAdminClient()

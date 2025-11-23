@@ -61,6 +61,7 @@ export type Database = {
         Row: {
           id: string
           created_at: string | null
+          user_id: string | null // FK auth.users
           destinatario: string
           indirizzo: string
           cap: string
@@ -94,6 +95,7 @@ export type Database = {
         Insert: {
           id?: string
           created_at?: string | null
+          user_id?: string | null
           destinatario: string
           indirizzo: string
           cap: string
@@ -127,6 +129,7 @@ export type Database = {
         Update: {
           id?: string
           created_at?: string | null
+          user_id?: string | null
           destinatario?: string
           indirizzo?: string
           cap?: string

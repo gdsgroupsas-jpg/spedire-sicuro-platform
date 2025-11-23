@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
-import { createClient } from '@supabase/supabase-js'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 import { comparaPrezzi } from '@/lib/utils/compare-prices'
 import { ListinoCorriere } from '@/lib/types'
 
@@ -9,13 +10,31 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY!,
 })
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
-
 export async function POST(req: NextRequest) {
   console.log('[OCR] POST request ricevuta')
+  
+  // Auth Check
+  const cookieStore = cookies()
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) { return cookieStore.get(name)?.value },
+        set(name: string, value: string, options: CookieOptions) { cookieStore.set({ name, value, ...options }) },
+        remove(name: string, options: CookieOptions) { cookieStore.set({ name, value: '', ...options }) },
+      },
+    }
+  )
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  
+  if (authError || !user) {
+    console.warn('[OCR] Accesso negato: utente non autenticato')
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  console.log('[OCR] Utente autenticato:', user.id)
   console.log('[OCR] Content-Type:', req.headers.get('content-type'))
   
   try {
@@ -284,6 +303,7 @@ REGOLE:
       .insert([
         {
           ...extracted,
+          user_id: user.id,
           dati_ocr: extracted,
           confronto_prezzi: comparison,
           peso: Number(extracted.peso),
