@@ -6,8 +6,15 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Spedire Sicuro Platform - Gestione Spedizioni AI',
-  description: 'Piattaforma intelligente per gestione spedizioni con OCR e comparatore prezzi automatico',
+  title: {
+    template: '%s | Spedire Sicuro Platform',
+    default: 'Spedire Sicuro Platform - Gestione Logistica Avanzata',
+  },
+  description: 'Piattaforma all-in-one per la gestione delle spedizioni, confronto listini e ottimizzazione logistica.',
+  robots: {
+    index: true,
+    follow: true,
+  },
 }
 
 export default function RootLayout({

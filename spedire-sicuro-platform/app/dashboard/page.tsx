@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase-browser'
 import { StatCard } from '@/components/dashboard/StatCard'
 import { QuickActionCard } from '@/components/dashboard/QuickActionCard'
 import { RecentActivity } from '@/components/dashboard/RecentActivity'
+import { OpportunityMap } from '@/components/dashboard/OpportunityMap'
 import { 
   Package, 
   PiggyBank, 
@@ -114,6 +115,9 @@ export default function DashboardOverview() {
           loading={loading}
         />
       </div>
+
+      {/* Geointelligence Map */}
+      <OpportunityMap />
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
