@@ -28,9 +28,15 @@ export async function POST(req: NextRequest) {
     }
 
     if (!listini || listini.length === 0) {
+      console.warn('[COMPARE] Nessun listino attivo trovato: ritorno risposta vuota')
       return NextResponse.json(
-        { error: 'Nessun listino attivo trovato. Carica prima un listino.' },
-        { status: 404 }
+        {
+          success: false,
+          opzioni: [],
+          message: 'Nessun listino attivo trovato. Carica prima un listino.',
+          code: 'NO_ACTIVE_LISTINI',
+        },
+        { status: 200 }
       )
     }
 
