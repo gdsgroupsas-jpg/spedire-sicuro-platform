@@ -12,7 +12,9 @@ import {
   Settings, 
   LogOut, 
   Menu, 
-  X 
+  X,
+  PackagePlus,
+  List
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/components/providers/auth-provider'
@@ -25,6 +27,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { name: 'Crea Spedizione', href: '/dashboard/crea-spedizione', icon: PackagePlus },
+    { name: 'Lista Spedizioni', href: '/dashboard/spedizioni', icon: List },
     { name: 'Analizza OCR', href: '/dashboard/ocr', icon: Camera },
     { name: 'Listini', href: '/listini', icon: FileText },
     { name: 'Report', href: '/dashboard/reports', icon: BarChart3, disabled: true },
