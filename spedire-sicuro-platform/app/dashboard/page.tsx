@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Upload, Loader2, Check, Download } from 'lucide-react'
@@ -84,6 +85,11 @@ export default function DashboardPage() {
               <p className="text-yellow-300">Gestione Spedizioni AI-Powered</p>
             </div>
           </div>
+          <Link href="/listini">
+            <Button variant="outline" className="bg-white/10 text-white border-white/20 hover:bg-white/20">
+              📋 Gestione Listini
+            </Button>
+          </Link>
         </div>
 
         {/* Upload Card */}

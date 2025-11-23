@@ -18,7 +18,7 @@
    ```
    NEXT_PUBLIC_SUPABASE_URL = https://mckroxzkwagtmtmvhvvq.supabase.co
    NEXT_PUBLIC_SUPABASE_ANON_KEY = [chiedi a Salvatore]
-   ANTHROPIC_API_KEY = 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
+   ANTHROPIC_API_KEY = your_anthropic_api_key_here
    ```
 
 4. **Deploy**
@@ -68,7 +68,7 @@ Copia: `anon` public key
 
 ### Claude API Key
 
-Hai già: `sk-ant-api03-tXW2-4pzw...`
+Inserisci la tua chiave Anthropic API
 
 ## ✅ Test Funzionamento
 

@@ -1,0 +1,477 @@
+{
+  "project": {
+    "name": "Spedire Sicuro Platform",
+    "version": "2.0",
+    "description": "Piattaforma automazione spedizioni con OCR AI e comparatore prezzi dinamico",
+    "status": "✅ Completato e pronto per test",
+    "date": "2025-01-27"
+  },
+  "tech_stack": {
+    "framework": "Next.js 14.0.4",
+    "language": "TypeScript",
+    "styling": "Tailwind CSS + shadcn/ui",
+    "database": "Supabase (PostgreSQL)",
+    "ai": "Claude Sonnet 4 (Anthropic)",
+    "deploy": "Vercel"
+  },
+  "features_implemented": {
+    "ocr": {
+      "status": "✅ Completato",
+      "description": "OCR tramite Claude Vision API per estrarre dati da screenshot WhatsApp",
+      "endpoint": "/api/ocr",
+      "saves_to_db": true
+    },
+    "listini_dinamici": {
+      "status": "✅ Completato",
+      "description": "Sistema upload e gestione listini corrieri via CSV/Excel",
+      "endpoints": [
+        "/api/listini/upload",
+        "/api/listini (GET/PUT/DELETE)"
+      ],
+      "formats_supported": ["CSV", "Excel (.xlsx, .xls)"],
+      "parser_intelligente": true
+    },
+    "comparatore_prezzi": {
+      "status": "✅ Completato",
+      "description": "Comparatore dinamico che legge listini da database",
+      "endpoint": "/api/compare",
+      "calculates": ["prezzo_base", "contrassegno", "totale", "margine"]
+    },
+    "export_csv": {
+      "status": "✅ Completato",
+      "description": "Export CSV formato spedisci.online",
+      "endpoint": "/api/csv"
+    },
+    "dashboard": {
+      "status": "✅ Completato",
+      "pages": [
+        "/dashboard - Upload OCR e visualizzazione risultati",
+        "/listini - Gestione listini corrieri"
+      ]
+    }
+  },
+  "database_schema": {
+    "tables": [
+      {
+        "name": "spedizioni",
+        "description": "Tutte le spedizioni processate",
+        "key_fields": [
+          "destinatario",
+          "indirizzo",
+          "cap",
+          "localita",
+          "provincia",
+          "peso",
+          "contrassegno",
+          "dati_ocr (JSONB)",
+          "confronto_prezzi (JSONB)"
+        ],
+        "schema_file": "supabase-schema.sql"
+      },
+      {
+        "name": "listini_corrieri",
+        "description": "Listini corrieri caricati (struttura flessibile JSONB)",
+        "key_fields": [
+          "fornitore",
+          "servizio",
+          "attivo (boolean)",
+          "dati_listino (JSONB)",
+          "regole_contrassegno (JSONB)",
+          "zone_coperte (array)"
+        ],
+        "schema_file": "supabase-schema.sql"
+      },
+      {
+        "name": "log_operazioni",
+        "description": "Log di tutte le operazioni",
+        "key_fields": [
+          "tipo",
+          "dettagli (JSONB)",
+          "esito"
+        ],
+        "schema_file": "supabase-schema.sql"
+      }
+    ],
+    "schema_file": "supabase-schema.sql"
+  },
+  "api_routes": {
+    "ocr": {
+      "path": "/api/ocr",
+      "method": "POST",
+      "description": "Elabora screenshot WhatsApp con Claude Vision",
+      "request": {
+        "body": {
+          "image": "base64 string"
+        }
+      },
+      "response": {
+        "extracted": "dati estratti",
+        "comparison": "confronto prezzi",
+        "spedizione_id": "ID salvato su DB"
+      },
+      "saves_to_db": true
+    },
+    "compare": {
+      "path": "/api/compare",
+      "method": "POST",
+      "description": "Confronta prezzi tra corrieri attivi",
+      "request": {
+        "body": {
+          "peso": "number",
+          "provincia": "string (2 lettere)",
+          "contrassegno": "number"
+        }
+      },
+      "response": {
+        "opzioni": "array di opzioni ordinate per prezzo"
+      },
+      "reads_from_db": true
+    },
+    "listini_upload": {
+      "path": "/api/listini/upload",
+      "method": "POST",
+      "description": "Upload nuovo listino corriere",
+      "request": {
+        "formData": {
+          "file": "File (CSV/Excel)",
+          "fornitore": "string",
+          "servizio": "string"
+        }
+      },
+      "response": {
+        "success": "boolean",
+        "data": "listino salvato"
+      }
+    },
+    "listini": {
+      "path": "/api/listini",
+      "methods": {
+        "GET": "Lista tutti i listini",
+        "PUT": "Aggiorna listino (attiva/disattiva)",
+        "DELETE": "Elimina listino"
+      }
+    },
+    "csv_export": {
+      "path": "/api/csv",
+      "method": "POST",
+      "description": "Export CSV formato spedisci.online",
+      "request": {
+        "body": {
+          "shipments": "array di spedizioni"
+        }
+      },
+      "response": "CSV file download"
+    }
+  },
+  "components": {
+    "ListiniManager": {
+      "file": "components/ListiniManager.tsx",
+      "description": "Componente gestione listini con upload, lista, attiva/disattiva",
+      "features": [
+        "Upload CSV/Excel",
+        "Lista listini caricati",
+        "Toggle attivo/disattivo",
+        "Eliminazione listini"
+      ]
+    },
+    "ui_components": {
+      "button": "components/ui/button.tsx",
+      "card": "components/ui/card.tsx",
+      "input": "components/ui/input.tsx"
+    }
+  },
+  "pages": {
+    "home": {
+      "path": "/",
+      "file": "app/page.tsx",
+      "description": "Homepage con logo e status"
+    },
+    "dashboard": {
+      "path": "/dashboard",
+      "file": "app/dashboard/page.tsx",
+      "description": "Dashboard principale con upload OCR e visualizzazione risultati",
+      "features": [
+        "Upload screenshot WhatsApp",
+        "Visualizzazione dati estratti",
+        "Comparazione prezzi",
+        "Download CSV"
+      ]
+    },
+    "listini": {
+      "path": "/listini",
+      "file": "app/listini/page.tsx",
+      "description": "Pagina gestione listini corrieri",
+      "features": [
+        "Upload listini",
+        "Gestione listini attivi/disattivi",
+        "Eliminazione listini"
+      ]
+    }
+  },
+  "lib_files": {
+    "parsers": {
+      "csv_parser": {
+        "file": "lib/parsers/csv-parser.ts",
+        "description": "Parser intelligente CSV con riconoscimento automatico colonne",
+        "features": [
+          "Riconosce vari nomi colonne",
+          "Supporta delimitatori multipli",
+          "Normalizza zone geografiche"
+        ]
+      },
+      "excel_parser": {
+        "file": "lib/parsers/excel-parser.ts",
+        "description": "Parser Excel (.xlsx, .xls)",
+        "uses": "xlsx library"
+      }
+    },
+    "utils": {
+      "compare_prices": {
+        "file": "lib/utils/compare-prices.ts",
+        "description": "Logica comparazione prezzi dinamica",
+        "functions": [
+          "getZonaFromProvincia",
+          "calcolaPrezzoBase",
+          "calcolaContrassegno",
+          "comparaPrezzi"
+        ]
+      }
+    },
+    "types": {
+      "file": "lib/types.ts",
+      "description": "TypeScript types completi",
+      "types": [
+        "ListinoCorriere",
+        "DatiListino",
+        "FasciaPeso",
+        "RegoleContrassegno",
+        "Spedizione",
+        "OpzioneCorriere"
+      ]
+    },
+    "supabase": {
+      "file": "lib/supabase.ts",
+      "description": "Client Supabase configurato"
+    }
+  },
+  "dependencies": {
+    "core": [
+      "next@14.0.4",
+      "react@^18.2.0",
+      "typescript@^5.3.3"
+    ],
+    "database": [
+      "@supabase/supabase-js@^2.39.0"
+    ],
+    "ai": [
+      "@anthropic-ai/sdk@^0.9.1"
+    ],
+    "parsing": [
+      "xlsx@^0.18.5",
+      "csv-parse@^6.1.0",
+      "papaparse@^5.4.1"
+    ],
+    "ui": [
+      "@radix-ui/react-slot",
+      "@radix-ui/react-label",
+      "class-variance-authority",
+      "clsx",
+      "tailwind-merge",
+      "tailwindcss-animate",
+      "lucide-react"
+    ]
+  },
+  "environment_variables": {
+    "required": [
+      {
+        "name": "ANTHROPIC_API_KEY",
+        "description": "API Key per Claude Vision",
+        "example": "sk-ant-..."
+      },
+      {
+        "name": "NEXT_PUBLIC_SUPABASE_URL",
+        "description": "URL progetto Supabase",
+        "example": "https://xxxxx.supabase.co"
+      },
+      {
+        "name": "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+        "description": "Chiave anonima Supabase",
+        "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      }
+    ],
+    "optional": [
+      {
+        "name": "SUPABASE_SERVICE_ROLE_KEY",
+        "description": "Service role key per operazioni admin"
+      }
+    ],
+    "file": ".env.local"
+  },
+  "file_structure": {
+    "app": {
+      "api": [
+        "ocr/route.ts",
+        "compare/route.ts",
+        "listini/route.ts",
+        "listini/upload/route.ts",
+        "csv/route.ts"
+      ],
+      "dashboard": ["page.tsx"],
+      "listini": ["page.tsx"],
+      "layout.tsx",
+      "page.tsx",
+      "globals.css"
+    },
+    "components": {
+      "ListiniManager.tsx",
+      "ui": ["button.tsx", "card.tsx", "input.tsx"]
+    },
+    "lib": {
+      "parsers": ["csv-parser.ts", "excel-parser.ts"],
+      "utils": ["compare-prices.ts"],
+      "types.ts",
+      "supabase.ts",
+      "utils.ts"
+    },
+    "public": ["logo.jpg"],
+    "root": [
+      "package.json",
+      "tsconfig.json",
+      "tailwind.config.js",
+      "next.config.js",
+      "supabase-schema.sql"
+    ]
+  },
+  "documentation": {
+    "README.md": "Documentazione completa progetto",
+    "SETUP.md": "Guida setup dettagliata",
+    "QUICK-START.md": "Guida rapida per iniziare",
+    "VERIFICA-SETUP.md": "Checklist verifica setup",
+    "TEST-IMAGE-GUIDE.md": "Come creare immagini test",
+    "DEPLOY.md": "Guida deploy Vercel",
+    "RECAP.json": "Questo file - riepilogo completo"
+  },
+  "setup_steps": {
+    "1_database": {
+      "description": "Eseguire schema SQL su Supabase",
+      "file": "supabase-schema.sql",
+      "location": "SQL Editor in Supabase Dashboard"
+    },
+    "2_environment": {
+      "description": "Creare file .env.local con variabili ambiente",
+      "template": "Vedi QUICK-START.md"
+    },
+    "3_install": {
+      "description": "Installare dipendenze",
+      "command": "npm install"
+    },
+    "4_dev_server": {
+      "description": "Avviare server sviluppo",
+      "command": "npm run dev"
+    },
+    "5_upload_listino": {
+      "description": "Caricare almeno un listino da /listini",
+      "required": true,
+      "note": "Necessario prima di testare OCR"
+    },
+    "6_test_ocr": {
+      "description": "Testare OCR con screenshot WhatsApp",
+      "location": "/dashboard"
+    }
+  },
+  "key_improvements_v2": {
+    "sistema_listini": {
+      "before": "Listini hard-coded in lib/listini.ts",
+      "after": "Sistema dinamico con upload CSV/Excel e salvataggio su database",
+      "benefits": [
+        "Scalabile",
+        "Flessibile",
+        "Gestione via UI",
+        "Nessuna modifica codice per nuovi corrieri"
+      ]
+    },
+    "comparatore": {
+      "before": "Leggeva da file TypeScript hard-coded",
+      "after": "Legge da database listini attivi",
+      "benefits": [
+        "Dinamico",
+        "Aggiornabile senza deploy",
+        "Supporta N corrieri"
+      ]
+    },
+    "parser": {
+      "description": "Parser intelligente che riconosce vari formati CSV/Excel",
+      "features": [
+        "Riconosce colonne con nomi diversi",
+        "Normalizza zone geografiche",
+        "Supporta delimitatori multipli"
+      ]
+    }
+  },
+  "testing_checklist": {
+    "prerequisites": [
+      "✅ File .env.local configurato",
+      "✅ Schema SQL eseguito su Supabase",
+      "✅ Server avviato (npm run dev)",
+      "✅ Almeno un listino caricato"
+    ],
+    "tests": [
+      {
+        "name": "Upload Listino",
+        "path": "/listini",
+        "steps": [
+          "Carica CSV con formato corretto",
+          "Verifica che appaia nella lista",
+          "Verifica status ATTIVO"
+        ]
+      },
+      {
+        "name": "OCR Test",
+        "path": "/dashboard",
+        "steps": [
+          "Carica screenshot WhatsApp",
+          "Verifica estrazione dati",
+          "Verifica comparazione prezzi",
+          "Verifica download CSV"
+        ]
+      },
+      {
+        "name": "Gestione Listini",
+        "path": "/listini",
+        "steps": [
+          "Attiva/disattiva listino",
+          "Elimina listino",
+          "Verifica che comparatore rispetti stato attivo"
+        ]
+      }
+    ]
+  },
+  "known_issues": {
+    "none": "Nessun problema noto al momento"
+  },
+  "next_steps": {
+    "optional_features": [
+      "Parser PDF per listini",
+      "Autenticazione multi-tenant",
+      "Dashboard clienti",
+      "Tracking automatico",
+      "WhatsApp Business integration"
+    ]
+  },
+  "support": {
+    "contact": "striano@postaexpress.it",
+    "documentation": "Vedi file .md nella root del progetto"
+  },
+  "summary": {
+    "status": "✅ PROGETTO COMPLETATO",
+    "ready_for": [
+      "Testing",
+      "Deploy produzione",
+      "Caricamento listini reali"
+    ],
+    "main_achievement": "Sistema listini completamente dinamico senza hard-coding",
+    "time_estimate": "3 ore implementazione",
+    "complexity": "Media-Alta"
+  }
+}
+
