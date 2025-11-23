@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@supabase/supabase-js'
+import { comparaPrezzi } from '@/lib/utils/compare-prices'
+import { ListinoCorriere } from '@/lib/types'
 
 // Inizializza client
 const anthropic = new Anthropic({
@@ -218,29 +220,61 @@ REGOLE:
       contrassegno: extracted.contrassegno
     })
     
-    // Call compare API to get prices
-    console.log('[OCR] Chiamata API compare prezzi...')
-    let comparison = []
+    // Call compare logic directly
+    console.log('[OCR] Avvio comparazione prezzi interna...')
+    let comparison: any[] = []
     try {
-      const compareResponse = await fetch(`${req.nextUrl.origin}/api/compare`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          peso: Number(extracted.peso),
-          provincia: extracted.provincia,
-          contrassegno: Number(extracted.contrassegno || 0),
-        }),
-      })
-      
-      if (compareResponse.ok) {
-        const compareData = await compareResponse.json()
-        comparison = compareData.opzioni || []
-        console.log('[OCR] Comparazione prezzi:', comparison.length, 'opzioni trovate')
+      // Recupera listini attivi
+      const { data: listini, error: listiniError } = await supabase
+        .from('listini_corrieri')
+        .select('*')
+        .eq('attivo', true)
+
+      if (listiniError) {
+        console.error('[OCR] Errore recupero listini:', listiniError)
+      } else if (listini && listini.length > 0) {
+        // Converti in formato tipizzato
+        const listiniTipizzati: ListinoCorriere[] = listini.map((l: any) => ({
+          id: l.id,
+          created_at: l.created_at,
+          updated_at: l.updated_at,
+          fornitore: l.fornitore,
+          servizio: l.servizio,
+          attivo: l.attivo,
+          file_originale: l.file_originale,
+          dati_listino: l.dati_listino,
+          regole_contrassegno: l.regole_contrassegno,
+          zone_coperte: l.zone_coperte || [],
+          peso_max: l.peso_max,
+          note: l.note,
+        }))
+
+        // Calcola opzioni
+        const opzioni = comparaPrezzi(
+          listiniTipizzati,
+          Number(extracted.peso),
+          extracted.provincia,
+          Number(extracted.contrassegno || 0)
+        )
+
+        // Aggiungi info extra
+        comparison = opzioni.map((opzione, index) => ({
+          ...opzione,
+          posizione: index + 1,
+          prezzoConsigliato: Number((opzione.totale * 1.35).toFixed(2)), // 35% markup
+          margine: Number((opzione.totale * 0.35).toFixed(2)),
+          marginePerc: 26.0,
+          nome: `${opzione.fornitore} - ${opzione.servizio}`,
+          tempi: '24-48h',
+          affidabilita: 4.5,
+        }))
+        
+        console.log('[OCR] Comparazione prezzi completata:', comparison.length, 'opzioni trovate')
       } else {
-        console.warn('[OCR] Errore chiamata compare API:', compareResponse.status)
+        console.warn('[OCR] Nessun listino attivo trovato')
       }
     } catch (compareError: any) {
-      console.warn('[OCR] Errore compare API (non bloccante):', compareError.message)
+      console.warn('[OCR] Errore comparazione interna (non bloccante):', compareError.message)
     }
     
     // Salva su Supabase
