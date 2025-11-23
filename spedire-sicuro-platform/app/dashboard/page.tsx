@@ -23,7 +23,7 @@ export default function DashboardOverview() {
     activeLists: 0,
     avgTime: '0s'
   })
-  const [recentActivity, setRecentActivity] = useState([])
+  const [recentActivity, setRecentActivity] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
 

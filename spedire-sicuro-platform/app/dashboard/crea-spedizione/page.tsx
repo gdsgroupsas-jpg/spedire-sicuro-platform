@@ -26,6 +26,10 @@ export default function CreateShipmentPage() {
       colli: 1,
       contrassegno: 0,
       peso: 1,
+      email_destinatario: undefined,
+      order_id: undefined,
+      rif_mittente: undefined,
+      note: undefined,
     }
   })
 
