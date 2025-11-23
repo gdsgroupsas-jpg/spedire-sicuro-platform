@@ -66,6 +66,14 @@ export type Spedizione = {
   immagine_url?: string
   dati_ocr?: any
   confronto_prezzi?: any
+  // Dati Mittente Custom
+  mittente_nome?: string
+  mittente_indirizzo?: string
+  mittente_cap?: string
+  mittente_citta?: string
+  mittente_provincia?: string
+  mittente_telefono?: string
+  mittente_email?: string
 }
 
 export type OpzioneCorriere = {

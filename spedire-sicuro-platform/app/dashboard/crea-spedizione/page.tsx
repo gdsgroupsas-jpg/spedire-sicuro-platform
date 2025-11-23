@@ -11,7 +11,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Loader2, Save, Download, Package, MapPin, Euro } from 'lucide-react'
+import { Switch } from '@/components/ui/switch'
+import { Loader2, Save, Download, Package, MapPin, Euro, PackagePlus, Truck } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 export default function CreateShipmentPage() {
@@ -30,8 +31,11 @@ export default function CreateShipmentPage() {
       order_id: undefined,
       rif_mittente: undefined,
       note: undefined,
+      usa_mittente_default: true,
     }
   })
+
+  const usaMittenteDefault = form.watch('usa_mittente_default')
 
   const onSubmit = async (data: ShipmentFormValues) => {
     setLoading(true)
@@ -107,8 +111,66 @@ export default function CreateShipmentPage() {
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* Colonna Sinistra: Dati Destinatario */}
+        {/* Colonna Sinistra: Dati Destinatario e Mittente */}
         <div className="lg:col-span-2 space-y-6">
+          
+          {/* Card Mittente */}
+          <Card>
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-slate-800">
+                  <Truck className="h-5 w-5" />
+                  Mittente
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="use-default-sender" className="text-sm text-slate-600 cursor-pointer">Usa predefinito</Label>
+                  <Switch
+                    id="use-default-sender"
+                    checked={usaMittenteDefault}
+                    onCheckedChange={(checked) => form.setValue('usa_mittente_default', checked)}
+                  />
+                </div>
+              </div>
+            </CardHeader>
+            {!usaMittenteDefault && (
+              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 pt-0">
+                <div className="md:col-span-2">
+                  <Label>Nome Mittente / Azienda</Label>
+                  <Input {...form.register('mittente_nome')} placeholder="La Tua Azienda SRL" />
+                  {form.formState.errors.mittente_nome && <p className="text-xs text-red-500 mt-1">{form.formState.errors.mittente_nome.message}</p>}
+                </div>
+                <div className="md:col-span-2">
+                  <Label>Indirizzo</Label>
+                  <Input {...form.register('mittente_indirizzo')} placeholder="Via del Magazzino 1" />
+                  {form.formState.errors.mittente_indirizzo && <p className="text-xs text-red-500 mt-1">{form.formState.errors.mittente_indirizzo.message}</p>}
+                </div>
+                <div>
+                  <Label>CAP</Label>
+                  <Input {...form.register('mittente_cap')} placeholder="00100" maxLength={5} />
+                  {form.formState.errors.mittente_cap && <p className="text-xs text-red-500 mt-1">{form.formState.errors.mittente_cap.message}</p>}
+                </div>
+                <div>
+                  <Label>Città</Label>
+                  <Input {...form.register('mittente_citta')} placeholder="Roma" />
+                  {form.formState.errors.mittente_citta && <p className="text-xs text-red-500 mt-1">{form.formState.errors.mittente_citta.message}</p>}
+                </div>
+                <div>
+                  <Label>Provincia</Label>
+                  <Input {...form.register('mittente_provincia')} placeholder="RM" maxLength={2} className="uppercase" />
+                  {form.formState.errors.mittente_provincia && <p className="text-xs text-red-500 mt-1">{form.formState.errors.mittente_provincia.message}</p>}
+                </div>
+                <div>
+                  <Label>Telefono</Label>
+                  <Input {...form.register('mittente_telefono')} placeholder="333..." />
+                </div>
+                <div className="md:col-span-2">
+                  <Label>Email</Label>
+                  <Input {...form.register('mittente_email')} placeholder="logistica@azienda.it" />
+                </div>
+              </CardContent>
+            )}
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-blue-600">
@@ -198,9 +260,31 @@ export default function CreateShipmentPage() {
           </Card>
         </div>
 
-        {/* Colonna Destra: Azioni e Riepilogo */}
-        <div className="space-y-6">
-          <Card className="border-blue-200 bg-blue-50">
+        {/* Sticky Mobile Footer Actions */}
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] md:hidden z-50 flex gap-3 items-center justify-between animate-in slide-in-from-bottom">
+          <Button 
+            type="button"
+            variant="outline"
+            onClick={handleSaveAndExport}
+            disabled={loading}
+            className="flex-1 border-green-600 text-green-600"
+          >
+            <Download className="h-4 w-4 mr-2" />
+            CSV
+          </Button>
+          <Button 
+            type="submit" 
+            className="flex-[2] bg-blue-600 hover:bg-blue-700 shadow-lg"
+            disabled={loading}
+          >
+             {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PackagePlus className="mr-2 h-4 w-4" />}
+             CREA SPEDIZIONE
+          </Button>
+        </div>
+
+        {/* Colonna Destra: Azioni e Riepilogo (Desktop) */}
+        <div className="space-y-6 hidden md:block">
+          <Card className="border-blue-200 bg-blue-50 sticky top-6">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-blue-800">
                 <Save className="h-5 w-5" />
@@ -211,11 +295,12 @@ export default function CreateShipmentPage() {
             <CardContent className="space-y-3">
               <Button 
                 type="submit" 
-                className="w-full bg-blue-600 hover:bg-blue-700"
+                className="w-full bg-blue-600 hover:bg-blue-700 shadow-md transition-all hover:scale-[1.02]"
                 disabled={loading}
+                size="lg"
               >
-                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                Salva Spedizione
+                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PackagePlus className="mr-2 h-5 w-5" />}
+                Crea Spedizione
               </Button>
               
               <div className="relative py-2">
@@ -230,7 +315,7 @@ export default function CreateShipmentPage() {
               <Button 
                 type="button" 
                 onClick={handleSaveAndExport}
-                className="w-full bg-green-600 hover:bg-green-700"
+                className="w-full bg-green-600 hover:bg-green-700 shadow-sm"
                 disabled={loading}
               >
                 {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}

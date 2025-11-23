@@ -29,6 +29,54 @@ export const shipmentSchema = z.object({
   corriere_scelto: z.string().optional().nullable(),
   servizio_scelto: z.string().optional().nullable(),
   prezzo_finale: z.number().optional().nullable(),
+
+  // Dati Mittente (Opzionale: default = true)
+  usa_mittente_default: z.boolean(), // Default gestito da React Hook Form
+  mittente_nome: z.string().optional().nullable(),
+  mittente_indirizzo: z.string().optional().nullable(),
+  mittente_cap: z.string().optional().nullable(),
+  mittente_citta: z.string().optional().nullable(),
+  mittente_provincia: z.string().optional().nullable(),
+  mittente_telefono: z.string().optional().nullable(),
+  mittente_email: z.string().optional().nullable(),
+}).superRefine((data, ctx) => {
+  if (!data.usa_mittente_default) {
+    if (!data.mittente_nome || data.mittente_nome.length < 3) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Nome mittente richiesto (min 3 caratteri)",
+        path: ["mittente_nome"]
+      })
+    }
+    if (!data.mittente_indirizzo || data.mittente_indirizzo.length < 5) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Indirizzo mittente incompleto",
+        path: ["mittente_indirizzo"]
+      })
+    }
+    if (!data.mittente_cap || !/^\d{5}$/.test(data.mittente_cap)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "CAP mittente non valido",
+        path: ["mittente_cap"]
+      })
+    }
+    if (!data.mittente_citta || data.mittente_citta.length < 2) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Città mittente richiesta",
+        path: ["mittente_citta"]
+      })
+    }
+    if (!data.mittente_provincia || data.mittente_provincia.length !== 2) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Provincia mittente (2 lettere)",
+        path: ["mittente_provincia"]
+      })
+    }
+  }
 })
 
 export type ShipmentFormValues = z.infer<typeof shipmentSchema>

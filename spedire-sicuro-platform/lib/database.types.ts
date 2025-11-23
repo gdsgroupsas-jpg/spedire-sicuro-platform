@@ -83,6 +83,13 @@ export type Database = {
           immagine_url: string | null
           dati_ocr: Json | null
           confronto_prezzi: Json | null
+          mittente_nome: string | null
+          mittente_indirizzo: string | null
+          mittente_cap: string | null
+          mittente_citta: string | null
+          mittente_provincia: string | null
+          mittente_telefono: string | null
+          mittente_email: string | null
         }
         Insert: {
           id?: string
@@ -109,6 +116,13 @@ export type Database = {
           immagine_url?: string | null
           dati_ocr?: Json | null
           confronto_prezzi?: Json | null
+          mittente_nome?: string | null
+          mittente_indirizzo?: string | null
+          mittente_cap?: string | null
+          mittente_citta?: string | null
+          mittente_provincia?: string | null
+          mittente_telefono?: string | null
+          mittente_email?: string | null
         }
         Update: {
           id?: string
@@ -135,6 +149,13 @@ export type Database = {
           immagine_url?: string | null
           dati_ocr?: Json | null
           confronto_prezzi?: Json | null
+          mittente_nome?: string | null
+          mittente_indirizzo?: string | null
+          mittente_cap?: string | null
+          mittente_citta?: string | null
+          mittente_provincia?: string | null
+          mittente_telefono?: string | null
+          mittente_email?: string | null
         }
         Relationships: []
       }
