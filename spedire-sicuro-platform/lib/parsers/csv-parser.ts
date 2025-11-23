@@ -30,7 +30,7 @@ export function parseCSVListino(
   }
 
   // Analizza la struttura del CSV
-  const firstRow = records[0]
+  const firstRow = records[0] as Record<string, any>
   const columns = Object.keys(firstRow)
 
   // Cerca colonne peso

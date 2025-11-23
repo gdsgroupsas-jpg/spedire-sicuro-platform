@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
     
     // Call Claude Vision API
     console.log('[OCR] Chiamata a Claude Vision API...')
-    const message = await anthropic.messages.create({
+    const message = await (anthropic as any).messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 2000,
       messages: [
