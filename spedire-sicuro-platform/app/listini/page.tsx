@@ -5,33 +5,14 @@ import ListiniManager from '@/components/ListiniManager'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { UserHeader } from '@/components/UserHeader'
 
 export default function ListiniPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-400 to-blue-900 p-8">
       <div className="container mx-auto max-w-6xl">
         {/* Header */}
-        <div className="mb-8 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/dashboard">
-              <Button variant="outline" size="sm">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Torna alla Dashboard
-              </Button>
-            </Link>
-            <Image
-              src="/logo.jpg"
-              alt="Spedire Sicuro"
-              width={60}
-              height={60}
-              className="rounded-full"
-            />
-            <div>
-              <h1 className="text-3xl font-bold text-white">Gestione Listini</h1>
-              <p className="text-yellow-300">Carica e gestisci i listini corrieri</p>
-            </div>
-          </div>
-        </div>
+        <UserHeader />
 
         {/* Listini Manager */}
         <div className="bg-white rounded-lg shadow-lg p-6">

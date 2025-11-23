@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Upload, Loader2, Check, Download } from 'lucide-react'
+import { UserHeader } from '@/components/UserHeader'
 
 export default function DashboardPage() {
   const [uploading, setUploading] = useState(false)
@@ -84,20 +85,7 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-gradient-to-br from-yellow-400 to-blue-900 p-8">
       <div className="container mx-auto max-w-6xl">
         {/* Header */}
-        <div className="mb-8 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Image src="/logo.jpg" alt="Spedire Sicuro" width={60} height={60} className="rounded-full" />
-            <div>
-              <h1 className="text-3xl font-bold text-white">Spedire Sicuro Platform</h1>
-              <p className="text-yellow-300">Gestione Spedizioni AI-Powered</p>
-            </div>
-          </div>
-          <Link href="/listini">
-            <Button variant="outline" className="bg-white/10 text-white border-white/20 hover:bg-white/20">
-              📋 Gestione Listini
-            </Button>
-          </Link>
-        </div>
+        <UserHeader />
 
         {/* Upload Card */}
         <Card className="mb-6">
