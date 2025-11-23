@@ -26,21 +26,28 @@ export default function DashboardPage() {
       reader.readAsDataURL(file)
       
       reader.onload = async () => {
-        const base64 = reader.result as string
+        try {
+          const base64 = reader.result as string
 
-        // Call OCR API
-        const response = await fetch('/api/ocr', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image: base64 }),
-        })
+          // Call OCR API
+          const response = await fetch('/api/ocr', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image: base64 }),
+          })
 
-        if (!response.ok) {
-          throw new Error('Errore OCR')
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ error: 'Errore sconosciuto' }))
+            throw new Error(errorData.error || errorData.details || `Errore OCR (${response.status})`)
+          }
+
+          const data = await response.json()
+          setResult(data)
+          setUploading(false)
+        } catch (err: any) {
+          setError(err.message || 'Errore durante elaborazione OCR')
+          setUploading(false)
         }
-
-        const data = await response.json()
-        setResult(data)
       }
 
       reader.onerror = () => {
@@ -196,7 +203,8 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {result.comparison.map((c: any, i: number) => (
+                  {result.comparison && result.comparison.length > 0 ? (
+                    result.comparison.map((c: any, i: number) => (
                     <div
                       key={c.corriere}
                       className={`flex items-center justify-between rounded-lg p-4 ${
@@ -226,7 +234,12 @@ export default function DashboardPage() {
                         <p className="text-sm text-gray-500">{c.marginePerc}%</p>
                       </div>
                     </div>
-                  ))}
+                    ))
+                  ) : (
+                    <div className="rounded-lg bg-yellow-50 p-4 text-yellow-700">
+                      ⚠️ Nessun listino caricato. Vai su <Link href="/listini" className="underline font-bold">Gestione Listini</Link> per caricare i listini corrieri.
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
