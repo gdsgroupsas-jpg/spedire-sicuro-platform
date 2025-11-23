@@ -196,24 +196,26 @@ export async function POST(request: NextRequest) {
     console.log('[UPLOAD] Inserimento in Supabase...')
     const client = getSupabaseClient()
     
-    const insertData = {
-      fornitore: fornitore.trim(),
-      servizio: servizio.trim(),
-      file_originale: file.name,
-      dati_listino: datiListino,
-      zone_coperte: zoneCoperte,
-      peso_min: pesoMin,
-      peso_max: pesoMax,
-      attivo: true
-    }
-    
-    const result = await (client
+    // @ts-ignore - Supabase types not generated for listini_corrieri
+    const insertResult = await (client
       .from('listini_corrieri')
-      .insert([insertData] as any)
+      .insert([
+        {
+          fornitore: fornitore.trim(),
+          servizio: servizio.trim(),
+          file_originale: file.name,
+          dati_listino: datiListino,
+          zone_coperte: zoneCoperte,
+          peso_min: pesoMin,
+          peso_max: pesoMax,
+          attivo: true
+        }
+      ])
       .select()
-      .single()) as { data: any; error: any }
+      .single() as any)
     
-    const { data, error } = result
+    const data = insertResult.data as any
+    const error = insertResult.error as any
 
     if (error) {
       console.error('[UPLOAD] Errore Supabase:', error)
