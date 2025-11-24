@@ -8,7 +8,94 @@ export type Json =
 
 export type Database = {
   public: {
+    Enums: {
+      shipment_status_enum: 'bozza' | 'inviata' | 'in_transito' | 'eccezione' | 'consegnata' | 'annullata'
+    }
     Tables: {
+      spedizioni: {
+        Row: {
+          id: string
+          created_at: string | null
+          destinatario: string
+          indirizzo: string
+          cap: string
+          localita: string
+          provincia: string
+          country: string | null
+          peso: number
+          colli: number | null
+          contrassegno: number | null
+          telefono: string | null
+          email_destinatario: string | null
+          contenuto: string | null
+          order_id: string | null
+          rif_mittente: string | null
+          rif_destinatario: string | null
+          note: string | null
+          corriere_scelto: string | null
+          servizio_scelto: string | null
+          prezzo_finale: number | null
+          immagine_url: string | null
+          dati_ocr: Json | null
+          confronto_prezzi: Json | null
+          status: Database['public']['Enums']['shipment_status_enum'] | null
+        }
+        Insert: {
+          id?: string
+          created_at?: string | null
+          destinatario: string
+          indirizzo: string
+          cap: string
+          localita: string
+          provincia: string
+          country?: string | null
+          peso: number
+          colli?: number | null
+          contrassegno?: number | null
+          telefono?: string | null
+          email_destinatario?: string | null
+          contenuto?: string | null
+          order_id?: string | null
+          rif_mittente?: string | null
+          rif_destinatario?: string | null
+          note?: string | null
+          corriere_scelto?: string | null
+          servizio_scelto?: string | null
+          prezzo_finale?: number | null
+          immagine_url?: string | null
+          dati_ocr?: Json | null
+          confronto_prezzi?: Json | null
+          status?: Database['public']['Enums']['shipment_status_enum'] | null
+        }
+        Update: {
+          id?: string
+          created_at?: string | null
+          destinatario?: string
+          indirizzo?: string
+          cap?: string
+          localita?: string
+          provincia?: string
+          country?: string | null
+          peso?: number
+          colli?: number | null
+          contrassegno?: number | null
+          telefono?: string | null
+          email_destinatario?: string | null
+          contenuto?: string | null
+          order_id?: string | null
+          rif_mittente?: string | null
+          rif_destinatario?: string | null
+          note?: string | null
+          corriere_scelto?: string | null
+          servizio_scelto?: string | null
+          prezzo_finale?: number | null
+          immagine_url?: string | null
+          dati_ocr?: Json | null
+          confronto_prezzi?: Json | null
+          status?: Database['public']['Enums']['shipment_status_enum'] | null
+        }
+        Relationships: []
+      }
       cap_validation: {
         Row: {
           id: string
@@ -51,7 +138,6 @@ export type Database = {
           dati_listino: Json
           regole_contrassegno: Json | null
           zone_coperte: string[] | null
-          peso_min: number | null
           peso_max: number | null
           note: string | null
         }
@@ -66,7 +152,6 @@ export type Database = {
           dati_listino: Json
           regole_contrassegno?: Json | null
           zone_coperte?: string[] | null
-          peso_min?: number | null
           peso_max?: number | null
           note?: string | null
         }
@@ -81,114 +166,8 @@ export type Database = {
           dati_listino?: Json
           regole_contrassegno?: Json | null
           zone_coperte?: string[] | null
-          peso_min?: number | null
           peso_max?: number | null
           note?: string | null
-        }
-        Relationships: []
-      }
-      spedizioni: {
-        Row: {
-          id: string
-          created_at: string | null
-          user_id: string | null // FK auth.users
-          destinatario: string
-          indirizzo: string
-          cap: string
-          localita: string
-          provincia: string
-          country: string | null
-          peso: number
-          colli: number | null
-          contrassegno: number | null
-          telefono: string | null
-          email_destinatario: string | null
-          contenuto: string | null
-          order_id: string | null
-          rif_mittente: string | null
-          rif_destinatario: string | null
-          note: string | null
-          corriere_scelto: string | null
-          servizio_scelto: string | null
-          prezzo_finale: number | null
-          immagine_url: string | null
-          dati_ocr: Json | null
-          confronto_prezzi: Json | null
-          mittente_nome: string | null
-          mittente_indirizzo: string | null
-          mittente_cap: string | null
-          mittente_citta: string | null
-          mittente_provincia: string | null
-          mittente_telefono: string | null
-          mittente_email: string | null
-        }
-        Insert: {
-          id?: string
-          created_at?: string | null
-          user_id?: string | null
-          destinatario: string
-          indirizzo: string
-          cap: string
-          localita: string
-          provincia: string
-          country?: string | null
-          peso: number
-          colli?: number | null
-          contrassegno?: number | null
-          telefono?: string | null
-          email_destinatario?: string | null
-          contenuto?: string | null
-          order_id?: string | null
-          rif_mittente?: string | null
-          rif_destinatario?: string | null
-          note?: string | null
-          corriere_scelto?: string | null
-          servizio_scelto?: string | null
-          prezzo_finale?: number | null
-          immagine_url?: string | null
-          dati_ocr?: Json | null
-          confronto_prezzi?: Json | null
-          mittente_nome?: string | null
-          mittente_indirizzo?: string | null
-          mittente_cap?: string | null
-          mittente_citta?: string | null
-          mittente_provincia?: string | null
-          mittente_telefono?: string | null
-          mittente_email?: string | null
-        }
-        Update: {
-          id?: string
-          created_at?: string | null
-          user_id?: string | null
-          destinatario?: string
-          indirizzo?: string
-          cap?: string
-          localita?: string
-          provincia?: string
-          country?: string | null
-          peso?: number
-          colli?: number | null
-          contrassegno?: number | null
-          telefono?: string | null
-          email_destinatario?: string | null
-          contenuto?: string | null
-          order_id?: string | null
-          rif_mittente?: string | null
-          rif_destinatario?: string | null
-          note?: string | null
-          corriere_scelto?: string | null
-          servizio_scelto?: string | null
-          prezzo_finale?: number | null
-          immagine_url?: string | null
-          dati_ocr?: Json | null
-          confronto_prezzi?: Json | null
-          mittente_nome?: string | null
-          mittente_indirizzo?: string | null
-          mittente_cap?: string | null
-          mittente_citta?: string | null
-          mittente_provincia?: string | null
-          mittente_telefono?: string | null
-          mittente_email?: string | null
         }
         Relationships: []
       }
@@ -217,52 +196,12 @@ export type Database = {
         Relationships: []
       }
     }
-    Views: {
-      client_shipments_view: {
-        Row: {
-          id: string
-          created_at: string | null
-          user_id: string | null
-          tenant_id: string | null
-          destinatario: string
-          indirizzo: string
-          cap: string
-          localita: string
-          provincia: string
-          country: string | null
-          peso: number
-          colli: number | null
-          contrassegno: number | null
-          telefono: string | null
-          email_destinatario: string | null
-          contenuto: string | null
-          order_id: string | null
-          rif_mittente: string | null
-          rif_destinatario: string | null
-          note: string | null
-          corriere_scelto: string | null
-          servizio_scelto: string | null
-          prezzo_finale: number | null
-          immagine_url: string | null
-          mittente_nome: string | null
-          mittente_citta: string | null
-          status: string | null
-        }
-      }
-    }
-    Functions: Record<string, never>
-    Enums: Record<string, never>
-    CompositeTypes: Record<string, never>
   }
 }
 
-type PublicTables = keyof Database['public']['Tables']
-
-export type Tables<TableName extends PublicTables> =
-  Database['public']['Tables'][TableName]['Row']
-
-export type TablesInsert<TableName extends PublicTables> =
-  Database['public']['Tables'][TableName]['Insert']
-
-export type TablesUpdate<TableName extends PublicTables> =
-  Database['public']['Tables'][TableName]['Update']
+// ⚠️ NOTA IMPORTANTE: Questo file è una struttura base temporanea.
+// Per ottenere i tipi completi e aggiornati dal database Supabase, esegui:
+// 
+// supabase gen types typescript --project-id mckroxzkwagtmtmvhvvq --schema public > lib/database.types.ts
+//
+// Questo comando rigenererà automaticamente tutti i tipi TypeScript dal tuo schema database.
