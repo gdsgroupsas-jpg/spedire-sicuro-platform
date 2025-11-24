@@ -36,7 +36,7 @@ export default function OCRScannerPage() {
         
         try {
             const formData = new FormData();
-            formData.append('file', file);
+            formData.append('image', file);
 
             // Chiamata all'API unificata (OCR Extractor + Price Logic)
             const response = await fetch('/api/ocr', {
@@ -51,12 +51,6 @@ export default function OCRScannerPage() {
                  throw new Error(result.error || result.details || "Errore sconosciuto durante l'estrazione.");
             }
 
-            // The API returns { success: true, data: [...] }
-            // But wait, app/api/ocr/route.ts returns { success: true, data: finalShipments }
-            // finalShipments is an array of items.
-            // Let's check app/api/ocr/route.ts output structure carefully.
-            // It returns: return NextResponse.json({ success: true, data: finalShipments });
-            
             setData(result.data); 
             setFile(null);
             
@@ -69,13 +63,6 @@ export default function OCRScannerPage() {
 
     const downloadCSV = async () => {
         if (!data || data.length === 0) return;
-        
-        // 1. Chiama l'API /api/csv con i dati arricchiti per la conversione
-        // We assume /api/csv accepts { shipments: data } or array directly.
-        // The user code sends body: JSON.stringify(data) which is an array.
-        // Need to check /api/csv implementation or assume it handles it. 
-        // Previous user prompt implied /api/csv creation in "Phase 1" of previous context, but I don't have its code.
-        // I will assume it works or create a stub if it fails.
         
         try {
             const response = await fetch('/api/csv', {
