@@ -121,6 +121,7 @@ export type Database = {
           mittente_provincia: string | null
           mittente_telefono: string | null
           mittente_email: string | null
+          status: Database["public"]["Enums"]["shipment_status_enum"] | null
         }
         Insert: {
           id?: string
@@ -155,6 +156,7 @@ export type Database = {
           mittente_provincia?: string | null
           mittente_telefono?: string | null
           mittente_email?: string | null
+          status?: Database["public"]["Enums"]["shipment_status_enum"] | null
         }
         Update: {
           id?: string
@@ -189,6 +191,7 @@ export type Database = {
           mittente_provincia?: string | null
           mittente_telefono?: string | null
           mittente_email?: string | null
+          status?: Database["public"]["Enums"]["shipment_status_enum"] | null
         }
         Relationships: []
       }
@@ -251,7 +254,9 @@ export type Database = {
       }
     }
     Functions: Record<string, never>
-    Enums: Record<string, never>
+    Enums: {
+      shipment_status_enum: "bozza" | "inviata" | "in_transito" | "eccezione" | "consegnata" | "annullata"
+    }
     CompositeTypes: Record<string, never>
   }
 }
