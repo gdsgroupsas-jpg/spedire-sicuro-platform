@@ -10,7 +10,6 @@
     "verify": "node scripts/verify-supabase.js"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.9.1",
     "@google/generative-ai": "^0.24.1",
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-dropdown-menu": "^2.0.6",
