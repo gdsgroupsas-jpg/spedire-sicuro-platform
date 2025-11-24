@@ -160,35 +160,39 @@ export async function POST(req: NextRequest) {
             },
             {
               type: 'text',
-              text: `Estrai TUTTI i dati da questo screenshot WhatsApp di una richiesta spedizione.
+              text: `Sei il CORE di Intelligenza Logistica di GDS Group S.A.S. (Spedire Sicuro). Il tuo compito è estrarre i dati di spedizione dagli screenshot forniti con precisione assoluta.
 
-CERCA E RESTITUISCI (formato JSON):
+TASK:
+Analizza l'immagine ed estrai i 7 campi dati primari per la spedizione.
 
+REGOLE DI COERCIZIONE (HARD-STOP):
+1. TELEFONO: Deve essere ESATTAMENTE 10 cifre. Rimuovi SEMPRE +39, spazi e trattini. Se mancano cifre o è assente, usa "".
+2. CONTRASEGNO: Deve essere un importo numerico in formato stringa "XX.XX". USA SEMPRE il PUNTO decimale. Se non presente o zero, usa "0.00".
+3. PROVINCIA: Deve essere la sigla di 2 LETTERE MAIUSCOLE (es. RM, NA, MI). Se non presente nell'indirizzo, deducila dalla località/CAP.
+4. DATI MANCANTI: Se un campo non è presente, usa la stringa vuota "" (NON NULL). NON INVENTARE DATI.
+
+OUTPUT RICHIESTO (JSON PURO):
+Genera UN SOLO oggetto JSON (o array se multipli, ma qui assumiamo singola spedizione principale) valido. Non includere markdown o testo extra.
+
+SCHEMA JSON:
 {
-  "destinatario": "nome completo",
-  "indirizzo": "via e numero civico",
-  "cap": "codice postale",
-  "localita": "città",
-  "provincia": "sigla provincia (ES: NA, RM, MI)",
-  "country": "IT",
-  "peso": numero_decimale_kg,
-  "colli": numero_intero,
-  "contrassegno": numero_decimale_euro (0 se non presente),
-  "telefono": "numero telefono",
-  "email_destinatario": "email se presente",
-  "contenuto": "descrizione merce",
-  "order_id": "codice ordine se presente",
-  "rif_mittente": "riferimento mittente",
-  "rif_destinatario": "riferimento destinatario",
-  "note": "eventuali note"
+  "destinatario": "Nome Cognome o Ragione Sociale",
+  "indirizzo": "Via, civico, dettagli",
+  "cap": "5 cifre (es. 80100)",
+  "localita": "Città",
+  "provincia": "XX",
+  "telefono": "1234567890",
+  "contrassegno": "0.00",
+  "contenuto": "Descrizione o 'Merce varia'",
+  "peso": numero (es. 1.0),
+  "colli": numero (es. 1),
+  "email_destinatario": "",
+  "note": ""
 }
 
-REGOLE:
-- Peso: converti in kg decimale (es: 1.5 per 1,5kg)
-- Contrassegno: solo numero (es: 25.5 non "25,50€")
-- Provincia: SEMPRE sigla 2 lettere maiuscole
-- Se campo non presente: null
-- Rispondi SOLO con JSON valido, nessun testo aggiuntivo`,
+RISPOSTA ERRORE:
+Se non riesci a trovare NESSUN dato di spedizione valido, rispondi ESATTAMENTE con:
+{"error": "no_shipping_data"}`,
             },
           ],
         },
@@ -204,7 +208,6 @@ REGOLE:
       : ''
     
     console.log('[OCR] Testo risposta lunghezza:', responseText.length)
-    console.log('[OCR] Prime 200 caratteri:', responseText.substring(0, 200))
     
     // Extract JSON from response (remove markdown if present)
     let jsonText = responseText.trim()
@@ -214,11 +217,24 @@ REGOLE:
     let extracted: any
     try {
       extracted = JSON.parse(jsonText)
+      
+      // Gestione errore esplicito da AI
+      if (extracted.error === 'no_shipping_data') {
+        console.warn('[OCR] AI non ha trovato dati validi')
+        return NextResponse.json(
+          { error: 'Nessun dato di spedizione rilevato nell\'immagine.' },
+          { status: 422 }
+        )
+      }
+
+      // Normalizzazione array vs oggetto singolo
+      if (Array.isArray(extracted)) {
+        extracted = extracted[0] // Prendi il primo se array
+      }
+
       console.log('[OCR] JSON parsato con successo')
-      console.log('[OCR] Campi estratti:', Object.keys(extracted))
     } catch (parseError: any) {
       console.error('[OCR] Errore parsing JSON:', parseError.message)
-      console.error('[OCR] Testo da parsare:', jsonText.substring(0, 500))
       throw new Error(`Errore parsing risposta Claude: ${parseError.message}`)
     }
     
