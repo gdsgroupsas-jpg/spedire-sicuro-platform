@@ -40,18 +40,17 @@ export default function CreateShipmentPage() {
   const onSubmit = async (data: ShipmentFormValues) => {
     setLoading(true)
     try {
-      // 1. Salva nel DB
-      const { data: savedData, error } = await supabase
-        .from('spedizioni')
-        .insert([{
-          ...data,
-          created_at: new Date().toISOString(),
-          status: 'bozza' // o 'pronta'
-        }])
-        .select()
-        .single()
+      // 1. Salva nel DB via API
+      const response = await fetch('/api/shipments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...data, status: 'bozza' }),
+      })
 
-      if (error) throw error
+      if (!response.ok) {
+        const res = await response.json()
+        throw new Error(res.message || res.error || 'Errore salvataggio')
+      }
 
       // 2. Feedback
       alert('Spedizione salvata con successo!')
@@ -73,18 +72,17 @@ export default function CreateShipmentPage() {
     const data = form.getValues()
     setLoading(true)
     try {
-      // 1. Salva (Simile a onSubmit ma per flusso export)
-      const { data: savedData, error } = await supabase
-        .from('spedizioni')
-        .insert([{
-          ...data,
-          created_at: new Date().toISOString(),
-          status: 'export_csv' 
-        }])
-        .select()
-        .single()
+      // 1. Salva (via API)
+      const response = await fetch('/api/shipments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...data, status: 'export_csv' }),
+      })
 
-      if (error) throw error
+      if (!response.ok) {
+        const res = await response.json()
+        throw new Error(res.message || res.error || 'Errore durante export')
+      }
 
       // 2. Genera & Scarica CSV
       const csvContent = generateSpedisciCSV([data])

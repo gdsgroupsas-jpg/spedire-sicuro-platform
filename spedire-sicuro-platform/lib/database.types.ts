@@ -9,6 +9,36 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      cap_validation: {
+        Row: {
+          id: string
+          cap: string
+          citta: string
+          provincia: string
+          regione: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          cap: string
+          citta: string
+          provincia: string
+          regione?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          cap?: string
+          citta?: string
+          provincia?: string
+          regione?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       listini_corrieri: {
         Row: {
           id: string
