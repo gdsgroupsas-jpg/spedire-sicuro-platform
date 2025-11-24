@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
   console.log('[OCR] POST request ricevuta')
   
   try {
-    // 2. VERIFICA NUOVA VARIABILE AMBIENTE
+    // 2. VERIFICA VARIABILE AMBIENTE GEMINI (fix deployment 2025-01-23)
     if (!GEMINI_API_KEY) {
       console.error('[OCR] GEMINI_API_KEY mancante')
       return NextResponse.json(
