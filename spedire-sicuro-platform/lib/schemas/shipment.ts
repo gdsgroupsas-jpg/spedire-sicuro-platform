@@ -39,6 +39,7 @@ export const shipmentSchema = z.object({
   mittente_provincia: z.string().optional().nullable(),
   mittente_telefono: z.string().optional().nullable(),
   mittente_email: z.string().optional().nullable(),
+  status: z.string().optional(),
 }).superRefine((data, ctx) => {
   if (!data.usa_mittente_default) {
     if (!data.mittente_nome || data.mittente_nome.length < 3) {
