@@ -121,6 +121,7 @@ export type Database = {
           mittente_provincia: string | null
           mittente_telefono: string | null
           mittente_email: string | null
+          status: string
         }
         Insert: {
           id?: string
@@ -155,6 +156,7 @@ export type Database = {
           mittente_provincia?: string | null
           mittente_telefono?: string | null
           mittente_email?: string | null
+          status?: string
         }
         Update: {
           id?: string
@@ -189,6 +191,7 @@ export type Database = {
           mittente_provincia?: string | null
           mittente_telefono?: string | null
           mittente_email?: string | null
+          status?: string
         }
         Relationships: []
       }
@@ -246,7 +249,7 @@ export type Database = {
           immagine_url: string | null
           mittente_nome: string | null
           mittente_citta: string | null
-          status: string | null
+          status: string
         }
       }
     }

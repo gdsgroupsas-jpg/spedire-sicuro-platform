@@ -26,7 +26,8 @@ CREATE TABLE IF NOT EXISTS spedizioni (
   prezzo_finale DECIMAL(10,2),
   immagine_url TEXT,
   dati_ocr JSONB,
-  confronto_prezzi JSONB
+  confronto_prezzi JSONB,
+  status TEXT NOT NULL DEFAULT 'bozza'
 );
 
 -- Tabella listini corrieri (NUOVA - struttura flessibile)
