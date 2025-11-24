@@ -1,11 +1,43 @@
+
+import { createServerClient } from '@supabase/ssr';
+import { redirect } from 'next/navigation';
+import { cookies } from 'next/headers';
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowRight, CheckCircle2, Zap, BarChart3, ShieldCheck, Box, Truck, FileText, Smartphone } from "lucide-react";
 
-export default function Home() {
-  return (
-    <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-amber-100 selection:text-amber-900">
+// Questo è il Server Component che gestisce la logica di routing.
+export default async function Index() {
+    const cookieStore = cookies();
+    
+    // Inizializza il client Supabase lato Server per il check Auth
+    const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+            cookies: {
+                get(name: string) {
+                    return cookieStore.get(name)?.value;
+                },
+            },
+        }
+    );
+    
+    // Controlla lo stato della sessione
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    // Logica Cruciale:
+    if (session) {
+        // Se l'utente è loggato, bypassa la homepage e reindirizza alla Dashboard.
+        // Lo status code HTTP 302 (temporaneo) è ideale.
+        redirect('/dashboard');
+    }
+
+    // Se l'utente NON è loggato, renderizza la Homepage (Login/Marketing)
+    // NOTA BENE: Il resto del tuo codice marketing/UI deve essere qui sotto
+    return (
+        <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-amber-100 selection:text-amber-900">
       
       {/* Navigation */}
       <nav className="sticky top-0 z-40 w-full border-b bg-white/80 backdrop-blur-md">
@@ -300,5 +332,5 @@ export default function Home() {
         </div>
       </footer>
     </div>
-  );
+    );
 }
