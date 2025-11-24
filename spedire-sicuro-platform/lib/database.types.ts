@@ -186,6 +186,39 @@ export type Database = {
         }
         Relationships: []
       }
+      cap_validation: {
+        Row: {
+          id: string
+          cap: string
+          city_name: string
+          provincia: string
+          region: string | null
+          created_at: string | null
+          updated_at: string | null
+          is_active: boolean | null
+        }
+        Insert: {
+          id?: string
+          cap: string
+          city_name: string
+          provincia: string
+          region?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+          is_active?: boolean | null
+        }
+        Update: {
+          id?: string
+          cap?: string
+          city_name?: string
+          provincia?: string
+          region?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+          is_active?: boolean | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       client_shipments_view: {

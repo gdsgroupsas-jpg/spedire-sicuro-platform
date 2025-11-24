@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "verify": "node scripts/verify-supabase.js"
+    "verify": "node scripts/verify-supabase.js",
+    "import-cap": "node scripts/import-cap-data.js",
+    "import-cap:sample": "node scripts/import-cap-data.js --file scripts/sample-cap-data.csv"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
@@ -27,6 +29,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "csv-parse": "^6.1.0",
+    "dotenv": "^16.4.5",
     "framer-motion": "^12.23.24",
     "jspdf": "^3.0.4",
     "jspdf-autotable": "^5.0.2",

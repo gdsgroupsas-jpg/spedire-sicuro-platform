@@ -40,27 +40,69 @@ export default function CreateShipmentPage() {
   const onSubmit = async (data: ShipmentFormValues) => {
     setLoading(true)
     try {
-      // 1. Salva nel DB
-      const { data: savedData, error } = await supabase
-        .from('spedizioni')
-        .insert([{
+      // Call the new API endpoint with validation
+      const response = await fetch('/api/shipments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           ...data,
-          created_at: new Date().toISOString(),
-          status: 'bozza' // o 'pronta'
-        }])
-        .select()
-        .single()
+          status: 'bozza'
+        }),
+      })
 
-      if (error) throw error
+      const result = await response.json()
 
-      // 2. Feedback
-      alert('Spedizione salvata con successo!')
+      if (!response.ok) {
+        // Handle validation errors
+        if (result.validationErrors) {
+          const errorMessage = [
+            'Errori di validazione:',
+            ...result.validationErrors.map((e: string) => `• ${e}`)
+          ].join('\n')
+          
+          // Show suggestions if available
+          if (result.suggestions) {
+            const suggestionMessage = []
+            if (result.suggestions.recipient) {
+              suggestionMessage.push('\nSuggerimenti per destinatario:')
+              if (result.suggestions.recipient.cap) suggestionMessage.push(`• CAP: ${result.suggestions.recipient.cap}`)
+              if (result.suggestions.recipient.city) suggestionMessage.push(`• Città: ${result.suggestions.recipient.city}`)
+              if (result.suggestions.recipient.provincia) suggestionMessage.push(`• Provincia: ${result.suggestions.recipient.provincia}`)
+            }
+            if (result.suggestions.sender) {
+              suggestionMessage.push('\nSuggerimenti per mittente:')
+              if (result.suggestions.sender.cap) suggestionMessage.push(`• CAP: ${result.suggestions.sender.cap}`)
+              if (result.suggestions.sender.city) suggestionMessage.push(`• Città: ${result.suggestions.sender.city}`)
+              if (result.suggestions.sender.provincia) suggestionMessage.push(`• Provincia: ${result.suggestions.sender.provincia}`)
+            }
+            alert(errorMessage + suggestionMessage.join('\n'))
+          } else {
+            alert(errorMessage)
+          }
+        } else {
+          alert(`Errore: ${result.error || 'Errore sconosciuto'}`)
+        }
+        return
+      }
+
+      // Handle warnings if any
+      if (result.warnings && result.warnings.length > 0) {
+        const warningMessage = [
+          'Spedizione salvata con avvertimenti:',
+          ...result.warnings.map((w: string) => `⚠️ ${w}`)
+        ].join('\n')
+        alert(warningMessage)
+      } else {
+        alert('Spedizione salvata con successo!')
+      }
       
-      // 3. Redirect o Reset
-      // router.push('/dashboard/spedizioni')
+      // Redirect to shipments list
+      router.push('/dashboard/spedizioni')
       
     } catch (error: any) {
-      alert(`Errore salvataggio: ${error.message}`)
+      alert(`Errore durante il salvataggio: ${error.message}`)
     } finally {
       setLoading(false)
     }
@@ -73,24 +115,68 @@ export default function CreateShipmentPage() {
     const data = form.getValues()
     setLoading(true)
     try {
-      // 1. Salva (Simile a onSubmit ma per flusso export)
-      const { data: savedData, error } = await supabase
-        .from('spedizioni')
-        .insert([{
+      // Call the new API endpoint with validation
+      const response = await fetch('/api/shipments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           ...data,
-          created_at: new Date().toISOString(),
-          status: 'export_csv' 
-        }])
-        .select()
-        .single()
+          status: 'export_csv'
+        }),
+      })
 
-      if (error) throw error
+      const result = await response.json()
+
+      if (!response.ok) {
+        // Handle validation errors
+        if (result.validationErrors) {
+          const errorMessage = [
+            'Errori di validazione:',
+            ...result.validationErrors.map((e: string) => `• ${e}`)
+          ].join('\n')
+          
+          // Show suggestions if available
+          if (result.suggestions) {
+            const suggestionMessage = []
+            if (result.suggestions.recipient) {
+              suggestionMessage.push('\nSuggerimenti per destinatario:')
+              if (result.suggestions.recipient.cap) suggestionMessage.push(`• CAP: ${result.suggestions.recipient.cap}`)
+              if (result.suggestions.recipient.city) suggestionMessage.push(`• Città: ${result.suggestions.recipient.city}`)
+              if (result.suggestions.recipient.provincia) suggestionMessage.push(`• Provincia: ${result.suggestions.recipient.provincia}`)
+            }
+            if (result.suggestions.sender) {
+              suggestionMessage.push('\nSuggerimenti per mittente:')
+              if (result.suggestions.sender.cap) suggestionMessage.push(`• CAP: ${result.suggestions.sender.cap}`)
+              if (result.suggestions.sender.city) suggestionMessage.push(`• Città: ${result.suggestions.sender.city}`)
+              if (result.suggestions.sender.provincia) suggestionMessage.push(`• Provincia: ${result.suggestions.sender.provincia}`)
+            }
+            alert(errorMessage + suggestionMessage.join('\n'))
+          } else {
+            alert(errorMessage)
+          }
+        } else {
+          alert(`Errore: ${result.error || 'Errore sconosciuto'}`)
+        }
+        return
+      }
 
       // 2. Genera & Scarica CSV
-      const csvContent = generateSpedisciCSV([data])
+      const csvContent = generateSpedisciCSV([result.data])
       downloadCSV(csvContent, `spedizione_${data.destinatario.replace(/\s+/g, '_')}.csv`)
       
-      alert('Spedizione salvata ed export CSV avviato!')
+      // Handle warnings if any
+      if (result.warnings && result.warnings.length > 0) {
+        const warningMessage = [
+          'Spedizione salvata ed export CSV avviato con avvertimenti:',
+          ...result.warnings.map((w: string) => `⚠️ ${w}`)
+        ].join('\n')
+        alert(warningMessage)
+      } else {
+        alert('Spedizione salvata ed export CSV avviato!')
+      }
+      
       router.push('/dashboard/spedizioni')
 
     } catch (error: any) {
