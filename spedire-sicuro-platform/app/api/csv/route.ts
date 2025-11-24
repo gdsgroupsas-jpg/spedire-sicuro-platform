@@ -1,9 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAuth } from '@/lib/auth-helpers'
+import { handleAPIError, handleValidationError } from '@/lib/error-handler'
+import { CsvExportSchema, validateInput } from '@/lib/validation-schemas'
 
 export async function POST(req: NextRequest) {
+  // SECURITY: Verifica autenticazione
+  const authError = await requireAuth(req)
+  if (authError) {
+    return authError
+  }
+
   try {
-    const { shipments } = await req.json()
-    
+    const body = await req.json()
+
+    // SECURITY: Validazione input
+    const validation = validateInput(CsvExportSchema, body)
+    if (!validation.success) {
+      return handleValidationError(validation.error, 'CSV_EXPORT')
+    }
+
+    const { shipments } = validation.data
+
     if (!shipments || !Array.isArray(shipments)) {
       return NextResponse.json(
         { error: 'Dati spedizioni mancanti' },
@@ -69,10 +86,7 @@ export async function POST(req: NextRequest) {
     })
     
   } catch (error: any) {
-    console.error('CSV Error:', error)
-    return NextResponse.json(
-      { error: 'Errore generazione CSV', details: error.message },
-      { status: 500 }
-    )
+    // SECURITY: Gestione sicura errori
+    return handleAPIError(error, 'CSV_EXPORT', 'Errore generazione CSV')
   }
 }

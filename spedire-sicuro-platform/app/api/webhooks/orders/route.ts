@@ -1,21 +1,77 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { handleAPIError, handleValidationError } from '@/lib/error-handler'
+import { WebhookOrderSchema, validateInput } from '@/lib/validation-schemas'
+import crypto from 'crypto'
 
 export async function POST(req: NextRequest) {
   console.log('[WEBHOOK] Incoming request...')
-  
+
   // 1. Validate Content-Type
   const contentType = req.headers.get('content-type')
   if (!contentType?.includes('application/json')) {
     console.warn('[WEBHOOK] Invalid Content-Type:', contentType)
     return NextResponse.json(
-      { error: 'Content-Type must be application/json' }, 
+      { error: 'Content-Type must be application/json' },
       { status: 400 }
     )
   }
 
+  let payload: any
+
   try {
-    // 2. Parse Payload
-    const payload = await req.json()
+    // SECURITY: Verifica firma webhook (se configurata)
+    const webhookSecret = process.env.WEBHOOK_SECRET
+    if (webhookSecret) {
+      const signature = req.headers.get('x-webhook-signature')
+      const timestamp = req.headers.get('x-webhook-timestamp')
+
+      if (!signature || !timestamp) {
+        console.warn('[WEBHOOK] Missing signature or timestamp')
+        return NextResponse.json(
+          { error: 'Missing webhook signature or timestamp' },
+          { status: 401 }
+        )
+      }
+
+      // Verifica timestamp (previene replay attacks - max 5 minuti)
+      const now = Date.now()
+      const requestTime = parseInt(timestamp)
+      if (Math.abs(now - requestTime) > 300000) {
+        console.warn('[WEBHOOK] Timestamp too old or in future')
+        return NextResponse.json(
+          { error: 'Request timestamp invalid or expired' },
+          { status: 401 }
+        )
+      }
+
+      // Verifica firma HMAC
+      const rawBody = await req.text()
+      const expectedSignature = crypto
+        .createHmac('sha256', webhookSecret)
+        .update(`${timestamp}.${rawBody}`)
+        .digest('hex')
+
+      if (signature !== expectedSignature) {
+        console.error('[WEBHOOK] Invalid signature detected!')
+        return NextResponse.json(
+          { error: 'Invalid webhook signature' },
+          { status: 401 }
+        )
+      }
+
+      // Parse dopo verifica firma
+      payload = JSON.parse(rawBody)
+    } else {
+      console.warn('[WEBHOOK] WEBHOOK_SECRET not configured - signature verification skipped')
+      // Parse payload normalmente
+      payload = await req.json()
+    }
+
+    // SECURITY: Validazione payload
+    const validation = validateInput(WebhookOrderSchema, payload)
+    if (!validation.success) {
+      return handleValidationError(validation.error, 'WEBHOOK')
+    }
     
     // 3. Log Event (Stub for DB insertion)
     console.log('------------------------------------------------')
@@ -35,10 +91,7 @@ export async function POST(req: NextRequest) {
     }, { status: 200 })
 
   } catch (error: any) {
-    console.error('[WEBHOOK] Error processing payload:', error)
-    return NextResponse.json(
-      { error: 'Invalid JSON payload', details: error.message }, 
-      { status: 400 }
-    )
+    // SECURITY: Gestione sicura errori
+    return handleAPIError(error, 'WEBHOOK', 'Error processing webhook')
   }
 }

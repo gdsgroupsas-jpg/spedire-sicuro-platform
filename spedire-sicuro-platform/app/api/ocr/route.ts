@@ -3,13 +3,16 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { comparaPrezzi } from '@/lib/utils/compare-prices'
 import { ListinoCorriere } from '@/lib/types'
+import { requireAuth } from '@/lib/auth-helpers'
+import { handleAPIError } from '@/lib/error-handler'
+import { validateFileSize } from '@/lib/validation-schemas'
 
 // **********************************************
 // 1. INIZIALIZZAZIONE (GEMINI ADAPTATION)
 // **********************************************
 
 // Il client Anthropic è rimosso e sostituito dall'uso della variabile d'ambiente
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY
+const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -20,8 +23,8 @@ const supabase = createClient(
 // NOTA: Qui, in produzione, avverrebbe la logica fetch/SDK per Google Gemini.
 // La simulazione garantisce che il flusso di business (prezzi) sia testabile.
 async function callGeminiVision(base64Image: string, mediaType: string): Promise<string> {
-    if (!GEMINI_API_KEY) {
-        throw new Error('GEMINI_API_KEY non configurata. Il flusso è bloccato.');
+    if (!GOOGLE_API_KEY) {
+        throw new Error('GOOGLE_API_KEY non configurata. Il flusso è bloccato.');
     }
     
     console.log('[OCR-GEMINI] Simulazione di estrazione AI in corso...');
@@ -52,11 +55,17 @@ async function callGeminiVision(base64Image: string, mediaType: string): Promise
 
 export async function POST(req: NextRequest) {
   console.log('[OCR] POST request ricevuta')
-  
+
+  // 1. SECURITY: Verifica autenticazione
+  const authError = await requireAuth(req)
+  if (authError) {
+    return authError
+  }
+
   try {
     // 2. VERIFICA NUOVA VARIABILE AMBIENTE
-    if (!GEMINI_API_KEY) {
-      console.error('[OCR] GEMINI_API_KEY mancante')
+    if (!GOOGLE_API_KEY) {
+      console.error('[OCR] GOOGLE_API_KEY mancante')
       return NextResponse.json(
         { error: 'Configurazione API GEMINI mancante. Controllare Vercel ENV vars.' },
         { status: 500 }
@@ -90,7 +99,25 @@ export async function POST(req: NextRequest) {
           { status: 400 }
         )
       }
-      
+
+      // SECURITY: Validazione dimensione file (max 10MB)
+      const sizeValidation = validateFileSize(imageFile, 10 * 1024 * 1024)
+      if (!sizeValidation.valid) {
+        return NextResponse.json(
+          { error: sizeValidation.error },
+          { status: 413 }
+        )
+      }
+
+      // SECURITY: Validazione tipo file (solo immagini)
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+      if (!allowedTypes.includes(imageFile.type)) {
+        return NextResponse.json(
+          { error: 'Tipo file non supportato. Usa JPEG, PNG o WebP.' },
+          { status: 400 }
+        )
+      }
+
       imageSize = imageFile.size
       mediaType = imageFile.type || 'image/jpeg'
       const arrayBuffer = await imageFile.arrayBuffer()
@@ -242,20 +269,7 @@ export async function POST(req: NextRequest) {
     })
     
   } catch (error: any) {
-    console.error('[OCR] Errore generale:', error)
-    
-    return NextResponse.json(
-      { 
-        error: 'Errore elaborazione immagine', 
-        details: error.message,
-        type: error.constructor.name
-      },
-      { 
-        status: 500,
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      }
-    )
+    // SECURITY: Gestione sicura errori (non espone dettagli in production)
+    return handleAPIError(error, 'OCR', 'Errore elaborazione immagine')
   }
 }

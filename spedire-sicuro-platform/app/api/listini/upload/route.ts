@@ -3,6 +3,7 @@ import { createClient, type SupabaseClient, type PostgrestSingleResponse } from 
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import type { Database, TablesInsert, Tables } from '@/lib/database.types'
+import { validateFileType, validateFileSize } from '@/lib/validation-schemas'
 
 // Inizializza Admin Supabase client (Singleton)
 let supabaseAdmin: SupabaseClient<Database> | null = null
@@ -114,21 +115,51 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Security check: File size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
+    // SECURITY: Validazione dimensione file (max 5MB)
+    const sizeValidation = validateFileSize(file, 5 * 1024 * 1024)
+    if (!sizeValidation.valid) {
       return NextResponse.json(
-        { error: 'File troppo grande (max 5MB)' },
+        { error: sizeValidation.error },
         { status: 413 }
       )
     }
 
+    // SECURITY: Validazione tipo file (solo CSV e Excel)
+    const allowedMimeTypes = [
+      'text/csv',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/csv',
+      'text/plain' // Alcuni browser segnano CSV come text/plain
+    ]
+    const allowedExtensions = ['.csv', '.xls', '.xlsx']
+
+    const fileValidation = validateFileType(file, allowedMimeTypes, allowedExtensions)
+    if (!fileValidation.valid) {
+      return NextResponse.json(
+        { error: fileValidation.error },
+        { status: 400 }
+      )
+    }
+
+    // SECURITY: Limita numero righe per prevenire DoS
+    const MAX_ROWS = 10000
+
     // Leggi contenuto file
     const text = await file.text()
     const lines = text.trim().split('\n').filter(line => line.trim())
-    
+
     if (lines.length < 2) {
       return NextResponse.json(
         { error: 'CSV deve contenere almeno header e una riga dati' },
+        { status: 400 }
+      )
+    }
+
+    // SECURITY: Check numero massimo righe
+    if (lines.length > MAX_ROWS) {
+      return NextResponse.json(
+        { error: `File troppo grande: massimo ${MAX_ROWS} righe permesse` },
         { status: 400 }
       )
     }

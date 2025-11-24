@@ -3,6 +3,9 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { comparaPrezzi } from '@/lib/utils/compare-prices'
 import { ListinoCorriere } from '@/lib/types'
+import { requireAuth } from '@/lib/auth-helpers'
+import { handleAPIError, handleValidationError } from '@/lib/error-handler'
+import { BatchCompareSchema, validateInput } from '@/lib/validation-schemas'
 
 type PriceCheckInput = {
   cap: string
@@ -21,11 +24,23 @@ type PriceCheckInput = {
 }
 
 export async function POST(req: NextRequest) {
+  // SECURITY: Verifica autenticazione
+  const authError = await requireAuth(req)
+  if (authError) {
+    return authError
+  }
+
   try {
     const body = await req.json()
-    
+
     // Support single object or array
     const items: PriceCheckInput[] = Array.isArray(body) ? body : [body]
+
+    // SECURITY: Validazione input
+    const validation = validateInput(BatchCompareSchema, items)
+    if (!validation.success) {
+      return handleValidationError(validation.error, 'COMPARE')
+    }
 
     if (!items || items.length === 0) {
       return NextResponse.json({ error: 'Nessun dato di spedizione fornito.' }, { status: 400 })
@@ -129,7 +144,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(results)
 
   } catch (error: any) {
-    console.error("Errore nel calcolo dei prezzi:", error)
-    return NextResponse.json({ error: 'Errore interno nel calcolo dei prezzi.', details: error.message }, { status: 500 })
+    // SECURITY: Gestione sicura errori
+    return handleAPIError(error, 'COMPARE', 'Errore nel calcolo dei prezzi')
   }
 }
