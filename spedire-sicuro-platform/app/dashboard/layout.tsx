@@ -32,7 +32,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: 'Crea Spedizione', href: '/dashboard/crea-spedizione', icon: PackagePlus },
     { name: 'Lista Spedizioni', href: '/dashboard/spedizioni', icon: List },
     { name: 'Analizza OCR', href: '/dashboard/ocr', icon: Camera },
-    { name: 'Servizi Postali', href: '/dashboard/admin/postale', icon: Mail },
+    { name: 'Gestione Posta', href: '/dashboard/admin/postale', icon: Mail },
     { name: 'Automation Agent', href: '/dashboard/automation', icon: Zap },
     { name: 'Listini', href: '/listini', icon: FileText },
     { name: 'Report', href: '/dashboard/reports', icon: BarChart3, disabled: true },
