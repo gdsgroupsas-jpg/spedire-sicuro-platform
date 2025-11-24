@@ -47,11 +47,35 @@ export default function OCRScannerPage() {
             const result = await response.json();
 
             if (!response.ok || result.error) {
-                 // Cattura l'errore che si vedeva nell'immagine
                  throw new Error(result.error || result.details || "Errore sconosciuto durante l'estrazione.");
             }
 
-            setData(result.data); 
+            // ADATTAMENTO RESPONSE: Il backend ora ritorna { extracted, comparison }
+            // Creiamo un oggetto "SpedizioneArricchita" combinando i dati anagrafici con la migliore opzione di spedizione
+            
+            // 1. Prendi i dati anagrafici
+            const baseData = result.extracted || {};
+            
+            // 2. Trova la migliore opzione (la prima dell'array comparison, se esiste)
+            const bestOption = (result.comparison && result.comparison.length > 0) ? result.comparison[0] : null;
+
+            // 3. Costruisci l'oggetto per la tabella
+            const singleShipmentData = {
+                ...baseData,
+                corriere_ottimale: bestOption ? bestOption.nome : 'N/A',
+                costo_corriere: bestOption ? bestOption.totale : 0,
+                margine: bestOption ? bestOption.margine : 0,
+                // Assicuriamoci che i campi essenziali ci siano
+                destinatario: baseData.destinatario || 'Sconosciuto',
+                indirizzo: baseData.indirizzo || '',
+                localita: baseData.localita || '',
+                provincia: baseData.provincia || '',
+                cap: baseData.cap || '',
+                contrassegno: baseData.contrassegno || 0
+            };
+
+            // La tabella si aspetta un array
+            setData([singleShipmentData]); 
             setFile(null);
             
         } catch (err: any) {
