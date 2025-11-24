@@ -1,5 +1,37 @@
 {
+  "name": "spedire-sicuro-platform",
+  "version": "1.0.0",
+  "description": "Piattaforma di gestione spedizioni con FSM per scalabilità",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "test": "node -r esbuild-register lib/shipment-workflow/shipment-fsm.test.ts",
+    "test:fsm": "node lib/shipment-workflow/shipment-fsm.test.js",
+    "type-check": "tsc --noEmit",
+    "gen:types": "supabase gen types typescript --project-id mckroxzkwagtmtmvhvvq --schema public > lib/database.types.ts"
+  },
   "dependencies": {
-    "@supabase/ssr": "^0.7.0"
+    "@supabase/ssr": "^0.7.0",
+    "@supabase/supabase-js": "^2.39.0",
+    "next": "14.0.4",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/react": "^18.2.45",
+    "@types/react-dom": "^18.2.18",
+    "autoprefixer": "^10.4.16",
+    "eslint": "^8.56.0",
+    "eslint-config-next": "14.0.4",
+    "postcss": "^8.4.32",
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
