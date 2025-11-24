@@ -1,3 +1,12 @@
+/**
+ * Database Types - Generato da Supabase
+ * 
+ * NOTA: Questo file dovrebbe essere rigenerato usando:
+ * supabase gen types typescript --project-id mckroxzkwagtmtmvhvvq --schema public > lib/database.types.ts
+ * 
+ * Per installare Supabase CLI: https://supabase.com/docs/guides/cli/getting-started
+ */
+
 export type Json =
   | string
   | number
@@ -6,263 +15,153 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export type Database = {
+export interface Database {
   public: {
     Tables: {
-      cap_validation: {
-        Row: {
-          id: string
-          cap: string
-          citta: string
-          provincia: string
-          regione: string | null
-          created_at: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          id?: string
-          cap: string
-          citta: string
-          provincia: string
-          regione?: string | null
-          created_at?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          id?: string
-          cap?: string
-          citta?: string
-          provincia?: string
-          regione?: string | null
-          created_at?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      listini_corrieri: {
-        Row: {
-          id: string
-          created_at: string | null
-          updated_at: string | null
-          fornitore: string
-          servizio: string
-          attivo: boolean
-          file_originale: string | null
-          dati_listino: Json
-          regole_contrassegno: Json | null
-          zone_coperte: string[] | null
-          peso_min: number | null
-          peso_max: number | null
-          note: string | null
-        }
-        Insert: {
-          id?: string
-          created_at?: string | null
-          updated_at?: string | null
-          fornitore: string
-          servizio: string
-          attivo?: boolean
-          file_originale?: string | null
-          dati_listino: Json
-          regole_contrassegno?: Json | null
-          zone_coperte?: string[] | null
-          peso_min?: number | null
-          peso_max?: number | null
-          note?: string | null
-        }
-        Update: {
-          id?: string
-          created_at?: string | null
-          updated_at?: string | null
-          fornitore?: string
-          servizio?: string
-          attivo?: boolean
-          file_originale?: string | null
-          dati_listino?: Json
-          regole_contrassegno?: Json | null
-          zone_coperte?: string[] | null
-          peso_min?: number | null
-          peso_max?: number | null
-          note?: string | null
-        }
-        Relationships: []
-      }
       spedizioni: {
         Row: {
           id: string
-          created_at: string | null
-          user_id: string | null // FK auth.users
+          tenant_id: string
           destinatario: string
           indirizzo: string
           cap: string
           localita: string
           provincia: string
-          country: string | null
-          peso: number
-          colli: number | null
-          contrassegno: number | null
           telefono: string | null
-          email_destinatario: string | null
+          email: string | null
           contenuto: string | null
-          order_id: string | null
-          rif_mittente: string | null
-          rif_destinatario: string | null
-          note: string | null
-          corriere_scelto: string | null
-          servizio_scelto: string | null
-          prezzo_finale: number | null
-          immagine_url: string | null
-          dati_ocr: Json | null
-          confronto_prezzi: Json | null
-          mittente_nome: string | null
-          mittente_indirizzo: string | null
-          mittente_cap: string | null
-          mittente_citta: string | null
-          mittente_provincia: string | null
-          mittente_telefono: string | null
-          mittente_email: string | null
+          peso: number
+          colli: number
+          contrassegno: number
+          corriere: string | null
+          costo_fornitore: number | null
+          prezzo_cliente: number | null
+          margine: number | null
+          tracking_code: string | null
+          status: string
+          stato: string
+          screenshot_url: string | null
+          created_at: string
+          updated_at: string | null
         }
         Insert: {
           id?: string
-          created_at?: string | null
-          user_id?: string | null
+          tenant_id: string
           destinatario: string
           indirizzo: string
           cap: string
           localita: string
           provincia: string
-          country?: string | null
-          peso: number
-          colli?: number | null
-          contrassegno?: number | null
           telefono?: string | null
-          email_destinatario?: string | null
+          email?: string | null
           contenuto?: string | null
-          order_id?: string | null
-          rif_mittente?: string | null
-          rif_destinatario?: string | null
-          note?: string | null
-          corriere_scelto?: string | null
-          servizio_scelto?: string | null
-          prezzo_finale?: number | null
-          immagine_url?: string | null
-          dati_ocr?: Json | null
-          confronto_prezzi?: Json | null
-          mittente_nome?: string | null
-          mittente_indirizzo?: string | null
-          mittente_cap?: string | null
-          mittente_citta?: string | null
-          mittente_provincia?: string | null
-          mittente_telefono?: string | null
-          mittente_email?: string | null
+          peso: number
+          colli: number
+          contrassegno?: number
+          corriere?: string | null
+          costo_fornitore?: number | null
+          prezzo_cliente?: number | null
+          margine?: number | null
+          tracking_code?: string | null
+          status?: string
+          stato?: string
+          screenshot_url?: string | null
+          created_at?: string
+          updated_at?: string | null
         }
         Update: {
           id?: string
-          created_at?: string | null
-          user_id?: string | null
+          tenant_id?: string
           destinatario?: string
           indirizzo?: string
           cap?: string
           localita?: string
           provincia?: string
-          country?: string | null
-          peso?: number
-          colli?: number | null
-          contrassegno?: number | null
           telefono?: string | null
-          email_destinatario?: string | null
+          email?: string | null
           contenuto?: string | null
-          order_id?: string | null
-          rif_mittente?: string | null
-          rif_destinatario?: string | null
-          note?: string | null
-          corriere_scelto?: string | null
-          servizio_scelto?: string | null
-          prezzo_finale?: number | null
-          immagine_url?: string | null
-          dati_ocr?: Json | null
-          confronto_prezzi?: Json | null
-          mittente_nome?: string | null
-          mittente_indirizzo?: string | null
-          mittente_cap?: string | null
-          mittente_citta?: string | null
-          mittente_provincia?: string | null
-          mittente_telefono?: string | null
-          mittente_email?: string | null
+          peso?: number
+          colli?: number
+          contrassegno?: number
+          corriere?: string | null
+          costo_fornitore?: number | null
+          prezzo_cliente?: number | null
+          margine?: number | null
+          tracking_code?: string | null
+          status?: string
+          stato?: string
+          screenshot_url?: string | null
+          created_at?: string
+          updated_at?: string | null
         }
-        Relationships: []
       }
-      log_operazioni: {
+      tenants: {
         Row: {
           id: string
-          timestamp: string | null
-          tipo: string | null
-          dettagli: Json | null
-          esito: string | null
+          name: string
+          slug: string
+          logo_url: string | null
+          primary_color: string
+          secondary_color: string
+          created_at: string
         }
         Insert: {
           id?: string
-          timestamp?: string | null
-          tipo?: string | null
-          dettagli?: Json | null
-          esito?: string | null
+          name: string
+          slug: string
+          logo_url?: string | null
+          primary_color?: string
+          secondary_color?: string
+          created_at?: string
         }
         Update: {
           id?: string
-          timestamp?: string | null
-          tipo?: string | null
-          dettagli?: Json | null
-          esito?: string | null
+          name?: string
+          slug?: string
+          logo_url?: string | null
+          primary_color?: string
+          secondary_color?: string
+          created_at?: string
         }
-        Relationships: []
+      }
+      users: {
+        Row: {
+          id: string
+          tenant_id: string
+          email: string
+          password_hash: string
+          role: 'admin' | 'client'
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          tenant_id: string
+          email: string
+          password_hash: string
+          role?: 'admin' | 'client'
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          tenant_id?: string
+          email?: string
+          password_hash?: string
+          role?: 'admin' | 'client'
+          created_at?: string
+        }
       }
     }
     Views: {
-      client_shipments_view: {
-        Row: {
-          id: string
-          created_at: string | null
-          user_id: string | null
-          tenant_id: string | null
-          destinatario: string
-          indirizzo: string
-          cap: string
-          localita: string
-          provincia: string
-          country: string | null
-          peso: number
-          colli: number | null
-          contrassegno: number | null
-          telefono: string | null
-          email_destinatario: string | null
-          contenuto: string | null
-          order_id: string | null
-          rif_mittente: string | null
-          rif_destinatario: string | null
-          note: string | null
-          corriere_scelto: string | null
-          servizio_scelto: string | null
-          prezzo_finale: number | null
-          immagine_url: string | null
-          mittente_nome: string | null
-          mittente_citta: string | null
-          status: string | null
-        }
-      }
+      [_ in never]: never
     }
-    Functions: Record<string, never>
-    Enums: Record<string, never>
-    CompositeTypes: Record<string, never>
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      shipment_status_enum: 'bozza' | 'inviata' | 'in_transito' | 'eccezione' | 'consegnata' | 'annullata'
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
 }
-
-type PublicTables = keyof Database['public']['Tables']
-
-export type Tables<TableName extends PublicTables> =
-  Database['public']['Tables'][TableName]['Row']
-
-export type TablesInsert<TableName extends PublicTables> =
-  Database['public']['Tables'][TableName]['Insert']
-
-export type TablesUpdate<TableName extends PublicTables> =
-  Database['public']['Tables'][TableName]['Update']
