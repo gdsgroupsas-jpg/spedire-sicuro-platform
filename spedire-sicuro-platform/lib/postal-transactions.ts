@@ -68,7 +68,7 @@ async function calcolaCostoPostale(
     
     // TODO: Aggiungere logica per servizi aggiuntivi (se applicabile, altrimenti solo costo_base)
     // Cast explicitly as number since Supabase types might infer exact values but we need generic number
-    return Number(data.costo_base); 
+    return Number((data as any).costo_base); 
 }
 
 
@@ -118,13 +118,14 @@ export async function registraOperazionePostale({
         throw new Error('RED ALERT CRITICO: Fondo Cassa irraggiungibile. Blocco operazione.');
     }
     
-    if ((fondoData.saldo_attuale || 0) < costoTotaleCOGS) {
-        throw new Error(`RED ALERT CASH FLOW: Saldo Cassa (${(fondoData.saldo_attuale || 0).toFixed(2)}€) insufficiente. Debito richiesto: €${costoTotaleCOGS.toFixed(2)}.`);
+    const fondoDataAny = fondoData as any;
+    if ((fondoDataAny.saldo_attuale || 0) < costoTotaleCOGS) {
+        throw new Error(`RED ALERT CASH FLOW: Saldo Cassa (${(fondoDataAny.saldo_attuale || 0).toFixed(2)}€) insufficiente. Debito richiesto: €${costoTotaleCOGS.toFixed(2)}.`);
     }
 
     // 3. Esecuzione Transazione Logica
     try {
-        const nuovoSaldo = Number(fondoData.saldo_attuale || 0) - costoTotaleCOGS;
+        const nuovoSaldo = Number(fondoDataAny.saldo_attuale || 0) - costoTotaleCOGS;
         const margineLordo = spedizioneDati.costo_utente_finale - costoTotaleCOGS;
         const codiceAffrancatrice = `PB-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`.toUpperCase();
 
@@ -138,7 +139,7 @@ export async function registraOperazionePostale({
                 codice_affrancatrice: codiceAffrancatrice,
                 user_id: adminUserId, 
                 is_agency_operation: true,
-            });
+            } as any);
 
         if (insertError) {
             // Se fallisce il log, non tentare il debito. Safe.
@@ -148,6 +149,7 @@ export async function registraOperazionePostale({
         // B. SCALA IL SALDO (Debito Finale)
         const { error: updateError } = await supabase
             .from('fondo_cassa_postale')
+            // @ts-ignore
             .update({ saldo_attuale: nuovoSaldo, ultima_ricarica: new Date().toISOString() })
             .eq('id', 1);
 
