@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS public.listini (
 
 -- 3. Create indexes for optimal query performance
 CREATE INDEX idx_listini_codice ON public.listini(codice_prodotto);
-CREATE INDEX idx_listini_categoria ON public.listini(categoria);
+CREATE INDEX idx_listini_categoria ON public.listini(ai_smart_price);
 CREATE INDEX idx_listini_attivo ON public.listini(attivo);
 CREATE INDEX idx_listini_ai_confidence ON public.listini(ai_confidence DESC);
 
@@ -50,3 +50,24 @@ GRANT SELECT, INSERT, UPDATE ON public.listini TO authenticated;
 
 -- 7. Verification message
 SELECT 'Listini table reset successfully for Intelligence-First system' AS status;
+
+-- ========================================
+-- SUPABASE FIX: ADD MISSING COLUMNS TO SPEDIZIONI
+-- Fixes "Could not find the 'status' column" error
+-- Date: 2025-11-24
+-- ========================================
+
+ALTER TABLE spedizioni ADD COLUMN IF NOT EXISTS status text DEFAULT 'bozza';
+ALTER TABLE spedizioni ADD COLUMN IF NOT EXISTS colli integer DEFAULT 1;
+ALTER TABLE spedizioni ADD COLUMN IF NOT EXISTS rif_mittente text;
+ALTER TABLE spedizioni ADD COLUMN IF NOT EXISTS rif_destinatario text;
+ALTER TABLE spedizioni ADD COLUMN IF NOT EXISTS note text;
+ALTER TABLE spedizioni ADD COLUMN IF NOT EXISTS telefono text;
+ALTER TABLE spedizioni ADD COLUMN IF NOT EXISTS email_destinatario text;
+ALTER TABLE spedizioni ADD COLUMN IF NOT EXISTS contenuto text;
+ALTER TABLE spedizioni ADD COLUMN IF NOT EXISTS order_id text;
+
+CREATE INDEX IF NOT EXISTS idx_spedizioni_status ON spedizioni(status);
+CREATE INDEX IF NOT EXISTS idx_spedizioni_order_id ON spedizioni(order_id);
+
+SELECT 'Spedizioni table updated with missing columns' AS status_spedizioni;
