@@ -1,0 +1,20 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/api/:path*"
+    }
+  ],
+  "redirects": [
+    {
+      "source": "https://spedire-sicuro-platform-cp1g.vercel.app/:path*",
+      "destination": "https://spedire-sicuro.vercel.app/:path*",
+      "permanent": true
+    },
+    {
+      "source": "https://spedire-sicuro-platform.vercel.app/:path*",
+      "destination": "https://spedire-sicuro.vercel.app/:path*",
+      "permanent": true
+    }
+  ]
+}
