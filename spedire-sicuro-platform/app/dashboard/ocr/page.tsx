@@ -1,254 +1,234 @@
-'use client'
+'use client';
+import { useState, useCallback } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Upload, X, CheckCircle, Loader2 } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'; // Componenti UI richiesti
+import { SpedizioneArricchita } from '@/lib/types'; // Assumendo l'esistenza di un tipo arricchito con i campi profitto
 
-import { useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Upload, Loader2, Check, Download } from 'lucide-react'
+// NOTA: Dropzone component omesso per brevità, si assume il suo funzionamento è corretto.
 
-export default function OCRPage() {
-  const [uploading, setUploading] = useState(false)
-  const [result, setResult] = useState<any>(null)
-  const [error, setError] = useState<string | null>(null)
+export default function OCRScannerPage() {
+    // Stato: file selezionato, dati risultanti (estratti + prezzi), loading, errore
+    const [file, setFile] = useState<File | null>(null);
+    const [data, setData] = useState<SpedizioneArricchita[] | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    setUploading(true)
-    setError(null)
-    setResult(null)
-
-    try {
-      const reader = new FileReader()
-      reader.readAsDataURL(file)
-      
-      reader.onload = async () => {
-        try {
-          const base64 = reader.result as string
-
-          const response = await fetch('/api/ocr', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ image: base64 }),
-          })
-
-          if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ error: 'Errore sconosciuto' }))
-            throw new Error(errorData.error || errorData.details || `Errore OCR (${response.status})`)
-          }
-
-          const data = await response.json()
-          setResult(data)
-          setUploading(false)
-        } catch (err: any) {
-          setError(err.message || 'Errore durante elaborazione OCR')
-          setUploading(false)
+    const handleFileDrop = useCallback((uploadedFile: File) => {
+        if (uploadedFile.size > 10 * 1024 * 1024) { 
+            setError("File troppo grande. Max 10MB.");
+            return;
         }
-      }
+        setFile(uploadedFile);
+        setError(null);
+        setData(null);
+    }, []);
 
-      reader.onerror = () => {
-        setError('Errore lettura file')
-        setUploading(false)
-      }
-    } catch (err: any) {
-      setError(err.message)
-      setUploading(false)
-    }
-  }
+    const processOCR = async () => {
+        if (!file) {
+            setError("Seleziona prima un file da processare.");
+            return;
+        }
 
-  const downloadCSV = async () => {
-    if (!result) return
+        setLoading(true);
+        setError(null);
+        
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
 
-    const response = await fetch('/api/csv', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ shipments: [result.extracted] }),
-    })
+            // Chiamata all'API unificata (OCR Extractor + Price Logic)
+            const response = await fetch('/api/ocr', {
+                method: 'POST',
+                body: formData,
+            });
 
-    const blob = await response.blob()
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `spedizione-${Date.now()}.csv`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    window.URL.revokeObjectURL(url)
-  }
+            const result = await response.json();
 
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">OCR Scanner</h1>
-          <p className="text-slate-500">Carica screenshot per estrarre dati spedizione</p>
+            if (!response.ok || result.error) {
+                 // Cattura l'errore che si vedeva nell'immagine
+                 throw new Error(result.error || result.details || "Errore sconosciuto durante l'estrazione.");
+            }
+
+            // The API returns { success: true, data: [...] }
+            // But wait, app/api/ocr/route.ts returns { success: true, data: finalShipments }
+            // finalShipments is an array of items.
+            // Let's check app/api/ocr/route.ts output structure carefully.
+            // It returns: return NextResponse.json({ success: true, data: finalShipments });
+            
+            setData(result.data); 
+            setFile(null);
+            
+        } catch (err: any) {
+            setError(`CRITICO: ${err.message || String(err)}`);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const downloadCSV = async () => {
+        if (!data || data.length === 0) return;
+        
+        // 1. Chiama l'API /api/csv con i dati arricchiti per la conversione
+        // We assume /api/csv accepts { shipments: data } or array directly.
+        // The user code sends body: JSON.stringify(data) which is an array.
+        // Need to check /api/csv implementation or assume it handles it. 
+        // Previous user prompt implied /api/csv creation in "Phase 1" of previous context, but I don't have its code.
+        // I will assume it works or create a stub if it fails.
+        
+        try {
+            const response = await fetch('/api/csv', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ shipments: data }),
+            });
+
+            if (response.ok) {
+                // 2. Gestione download file CSV
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `spedizioni_ocr_${new Date().toISOString().slice(0,10)}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+            } else {
+                setError("Errore durante la generazione del CSV.");
+            }
+        } catch (e) {
+             setError("Errore di rete durante download CSV.");
+        }
+    };
+    
+    // Funzione per formattare il Contrassegno (XX.XX€) e il Margine
+    const formatCurrency = (value: string | number) => {
+        const num = parseFloat(String(value));
+        return isNaN(num) ? "N/A" : num.toFixed(2) + "€";
+    };
+
+    return (
+        <div className="space-y-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center text-2xl">OCR Scanner</CardTitle>
+                    <p className="text-sm text-gray-500">
+                        L'AI estrarrà e calcolerà il profitto ottimale in tempo reale.
+                    </p>
+                </CardHeader>
+                <CardContent>
+                    {/* ... Dropzone e File Selected UI (come nel codice precedente) ... */}
+                    
+                    {!file && !data && (
+                        <div className="flex flex-col items-center justify-center h-[200px] border-2 border-dashed border-yellow-300 rounded-lg bg-yellow-50/50 relative">
+                             <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => e.target.files?.[0] && handleFileDrop(e.target.files[0])}
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                            />
+                            <Upload className="w-10 h-10 text-yellow-500" />
+                            <p className="mt-2 text-sm text-gray-600">
+                                Trascina screenshot o clicca per selezionare
+                            </p>
+                            <Button className="mt-4 pointer-events-none">
+                                Carica file
+                            </Button>
+                        </div>
+                    )}
+
+                    {file && !loading && !data && (
+                        <div className="flex flex-col items-center justify-center p-6 border rounded-lg bg-slate-50">
+                            <p className="mb-4 font-medium text-slate-700">File selezionato: {file.name}</p>
+                            <div className="flex gap-3">
+                                <Button onClick={processOCR} className="bg-blue-600 hover:bg-blue-700">
+                                    🚀 Avvia Analisi AI
+                                </Button>
+                                <Button variant="outline" onClick={() => setFile(null)}>
+                                    Annulla
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+
+                    {loading && (
+                        <div className="flex flex-col items-center justify-center p-12">
+                            <Loader2 className="w-12 h-12 text-yellow-500 animate-spin" />
+                            <p className="mt-4 text-lg text-slate-600">Analisi immagine e calcolo profitti in corso...</p>
+                        </div>
+                    )}
+                    
+                    {error && (
+                        <div className="mt-4 p-3 border border-red-500 rounded-md bg-red-50 text-red-700 flex items-center">
+                            <X className="w-5 h-5 mr-2" />
+                            <p className="text-sm">ERRORE: {error}</p> 
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+
+            {/* PHASE 2: RISULTATI E TABELLA DI PROFITTO (MARKETING/CFO VISUALIZATION) */}
+            {data && data.length > 0 && (
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between">
+                        <CardTitle className="flex items-center text-xl">
+                            <CheckCircle className="w-5 h-5 mr-2 text-green-600" />
+                            {data.length} Spedizioni Analizzate
+                        </CardTitle>
+                        <div className="flex gap-2">
+                            <Button 
+                                onClick={downloadCSV} 
+                                className="bg-green-600 hover:bg-green-700 text-white"
+                                disabled={loading}
+                            >
+                                Scarica CSV per spedisci.online
+                            </Button>
+                            <Button variant="outline" onClick={() => { setData(null); setFile(null); }}>
+                                Nuova Scansione
+                            </Button>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="overflow-x-auto">
+                            <Table>
+                                <TableHeader className="bg-gray-100">
+                                    <TableRow>
+                                        <TableHead>Destinatario</TableHead>
+                                        <TableHead>Città/CAP</TableHead>
+                                        <TableHead>Contrassegno (Entrata)</TableHead>
+                                        <TableHead>Corriere Ottimale</TableHead>
+                                        <TableHead>Costo Spedizione</TableHead>
+                                        <TableHead className="text-right">💰 Margine Netto</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {data.map((shipment, index) => (
+                                        <TableRow key={index}>
+                                            <TableCell className="font-medium">
+                                                {shipment.destinatario}
+                                                <div className="text-xs text-gray-500 truncate">{shipment.indirizzo}</div>
+                                            </TableCell>
+                                            <TableCell>{shipment.localita} ({shipment.provincia}) - {shipment.cap}</TableCell>
+                                            <TableCell className="font-semibold">{formatCurrency(shipment.contrassegno || 0)}</TableCell>
+                                            <TableCell className="font-bold text-yellow-600">{shipment.corriere_ottimale || 'N/A'}</TableCell>
+                                            <TableCell>{formatCurrency(shipment.costo_corriere || 'N/A')}</TableCell>
+                                            <TableCell 
+                                                className={`text-right font-bold text-lg ${
+                                                    (parseFloat(String(shipment.margine || '0')) > 0 ? 'text-green-600' : 'text-red-600')
+                                                }`}
+                                            >
+                                                {formatCurrency(shipment.margine || 0)}
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
         </div>
-      </div>
-
-      {/* Upload Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            📸 Carica Screenshot WhatsApp
-          </CardTitle>
-          <CardDescription>
-            L'AI leggerà automaticamente tutti i dati dell'ordine
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="relative">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleFileUpload}
-              disabled={uploading}
-              className="absolute inset-0 z-10 cursor-pointer opacity-0"
-            />
-            <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-yellow-400 bg-yellow-50 p-12 text-center hover:bg-yellow-100 transition-colors">
-              {uploading ? (
-                <>
-                  <Loader2 className="h-12 w-12 animate-spin text-yellow-600" />
-                  <p className="mt-4 text-lg font-medium">🤖 AI sta leggendo...</p>
-                </>
-              ) : (
-                <>
-                  <Upload className="h-12 w-12 text-yellow-600" />
-                  <p className="mt-4 text-lg font-medium">Trascina screenshot o clicca per selezionare</p>
-                  <p className="mt-2 text-sm text-gray-500">JPG, PNG fino a 10MB</p>
-                </>
-              )}
-            </div>
-          </div>
-
-          {error && (
-            <div className="mt-4 rounded-lg bg-red-50 p-4 text-red-700 flex items-center gap-2">
-              ❌ {error}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Results */}
-      {result && (
-        <div className="grid gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          {/* Extracted Data */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Check className="text-green-600" />
-                Dati Estratti
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="text-xs font-semibold text-slate-500 uppercase">Destinatario</label>
-                  <p className="text-lg font-medium">{result.extracted.destinatario}</p>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-slate-500 uppercase">Telefono</label>
-                  <p className="text-lg font-medium">{result.extracted.telefono}</p>
-                </div>
-                <div className="md:col-span-2">
-                  <label className="text-xs font-semibold text-slate-500 uppercase">Indirizzo</label>
-                  <p className="text-lg font-medium">{result.extracted.indirizzo}</p>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-slate-500 uppercase">CAP</label>
-                  <p className="text-lg font-medium">{result.extracted.cap}</p>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-slate-500 uppercase">Città</label>
-                  <p className="text-lg font-medium">{result.extracted.localita}</p>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-slate-500 uppercase">Provincia</label>
-                  <p className="text-lg font-bold text-blue-600">{result.extracted.provincia}</p>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-slate-500 uppercase">Peso (kg)</label>
-                  <p className="text-lg font-medium">{result.extracted.peso}</p>
-                </div>
-                <div className="md:col-span-2">
-                  <label className="text-xs font-semibold text-slate-500 uppercase">Contenuto</label>
-                  <p className="text-lg font-medium">{result.extracted.contenuto}</p>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-slate-500 uppercase">Contrassegno</label>
-                  <p className="text-lg font-bold text-green-600">€{result.extracted.contrassegno}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Price Comparison */}
-          <Card>
-            <CardHeader>
-              <CardTitle>💰 Comparatore Prezzi</CardTitle>
-              <CardDescription>Migliore tariffa calcolata automaticamente</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {result.comparison && result.comparison.length > 0 ? (
-                  result.comparison.map((c: any, i: number) => (
-                  <div
-                    key={c.corriere}
-                    className={`flex items-center justify-between rounded-xl p-4 border ${
-                      i === 0
-                        ? 'bg-green-50 border-green-200 shadow-sm'
-                        : 'bg-white border-slate-100'
-                    }`}
-                  >
-                    <div>
-                      <p className="font-bold text-lg text-slate-800">
-                        {i === 0 && '🥇 '}
-                        {c.nome}
-                      </p>
-                      <p className="text-sm text-slate-500">{c.tempi}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs text-slate-400 uppercase">Costo</p>
-                      <p className="text-xl font-bold text-slate-700">€{c.costo}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs text-slate-400 uppercase">Prezzo Cliente</p>
-                      <p className="text-xl font-bold text-green-600">€{c.prezzoConsigliato}</p>
-                    </div>
-                    <div className="text-right hidden sm:block">
-                      <p className="text-xs text-slate-400 uppercase">Margine</p>
-                      <p className="text-lg font-bold text-blue-600">€{c.margine}</p>
-                      <p className="text-xs text-blue-400">{c.marginePerc}%</p>
-                    </div>
-                  </div>
-                  ))
-                ) : (
-                  <div className="rounded-lg bg-yellow-50 p-4 text-yellow-800 text-center border border-yellow-100">
-                    ⚠️ Nessun listino attivo trovato per questa configurazione.
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Actions */}
-          <div className="flex gap-4 pt-4">
-            <Button onClick={downloadCSV} size="lg" className="flex-1 bg-blue-600 hover:bg-blue-700">
-              <Download className="mr-2 h-5 w-5" />
-              Scarica CSV
-            </Button>
-            <Button 
-              variant="outline" 
-              size="lg"
-              onClick={() => {
-                setResult(null)
-                setError(null)
-              }}
-            >
-              🔄 Nuova Scansione
-            </Button>
-          </div>
-        </div>
-      )}
-    </div>
-  )
+    );
 }

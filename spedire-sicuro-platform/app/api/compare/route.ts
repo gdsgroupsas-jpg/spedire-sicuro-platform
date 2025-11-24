@@ -86,7 +86,6 @@ export async function POST(req: NextRequest) {
       )
 
       // Seleziona la migliore opzione (la prima perché sorted) o formatta le opzioni
-      // Qui restituiamo tutte le opzioni arricchite come nel vecchio endpoint
       const opzioniConInfo = opzioni.map((opzione, index) => ({
         ...opzione,
         posizione: index + 1,
@@ -98,10 +97,16 @@ export async function POST(req: NextRequest) {
         affidabilita: 4.5,
       }))
 
+      const miglior_prezzo = opzioniConInfo[0] || null
+
       return {
         ...item,
         opzioni: opzioniConInfo,
-        miglior_prezzo: opzioniConInfo[0] || null
+        miglior_prezzo: miglior_prezzo,
+        // Flattened fields for easier UI consumption and CSV export
+        corriere_ottimale: miglior_prezzo ? miglior_prezzo.nome : 'N/A',
+        costo_corriere: miglior_prezzo ? miglior_prezzo.totale : 0,
+        margine: miglior_prezzo ? miglior_prezzo.margine : 0
       }
     }))
 

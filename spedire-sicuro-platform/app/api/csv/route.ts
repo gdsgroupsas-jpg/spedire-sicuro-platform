@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
       s.destinatario || '',
       s.note || '',
       s.telefono || '',
-      s.email || '',
+      s.email_destinatario || s.email || '',
       s.contenuto || '',
       s.order_id || `ORD-${Date.now()}`,
       s.contrassegno || 0,

@@ -84,6 +84,14 @@ export type OpzioneCorriere = {
   contrassegno: number
   totale: number
   dettagli: DatiListino
+  // Fields added by compare API
+  nome?: string
+  prezzoConsigliato?: number
+  margine?: number
+  marginePerc?: number
+  tempi?: string
+  affidabilita?: number
+  posizione?: number
 }
 
 export type ConfrontoPrezzi = {
@@ -93,3 +101,11 @@ export type ConfrontoPrezzi = {
   contrassegno: number
 }
 
+export type SpedizioneArricchita = Spedizione & {
+  corriere_ottimale?: string
+  costo_corriere?: number | string
+  margine?: number | string
+  prezzo_consigliato?: number
+  miglior_prezzo?: OpzioneCorriere
+  opzioni?: OpzioneCorriere[]
+}
