@@ -1,6 +1,7 @@
 // lib/postal-transactions.ts
+'use server'
 
-import { createServerClient } from '@supabase/ssr'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { Database } from '@/lib/database.types' // Assumi path corretto per i tipi Supabase
 
@@ -66,7 +67,8 @@ async function calcolaCostoPostale(
     }
     
     // TODO: Aggiungere logica per servizi aggiuntivi (se applicabile, altrimenti solo costo_base)
-    return data.costo_base; 
+    // Cast explicitly as number since Supabase types might infer exact values but we need generic number
+    return Number(data.costo_base); 
 }
 
 
@@ -116,13 +118,13 @@ export async function registraOperazionePostale({
         throw new Error('RED ALERT CRITICO: Fondo Cassa irraggiungibile. Blocco operazione.');
     }
     
-    if (fondoData.saldo_attuale < costoTotaleCOGS) {
-        throw new Error(`RED ALERT CASH FLOW: Saldo Cassa (${fondoData.saldo_attuale.toFixed(2)}€) insufficiente. Debito richiesto: €${costoTotaleCOGS.toFixed(2)}.`);
+    if ((fondoData.saldo_attuale || 0) < costoTotaleCOGS) {
+        throw new Error(`RED ALERT CASH FLOW: Saldo Cassa (${(fondoData.saldo_attuale || 0).toFixed(2)}€) insufficiente. Debito richiesto: €${costoTotaleCOGS.toFixed(2)}.`);
     }
 
     // 3. Esecuzione Transazione Logica
     try {
-        const nuovoSaldo = Number(fondoData.saldo_attuale) - costoTotaleCOGS;
+        const nuovoSaldo = Number(fondoData.saldo_attuale || 0) - costoTotaleCOGS;
         const margineLordo = spedizioneDati.costo_utente_finale - costoTotaleCOGS;
         const codiceAffrancatrice = `PB-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`.toUpperCase();
 
@@ -166,5 +168,3 @@ export async function registraOperazionePostale({
         throw error;
     }
 }
-
-import { type CookieOptions } from '@supabase/ssr'

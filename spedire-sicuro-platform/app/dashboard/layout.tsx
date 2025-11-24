@@ -14,7 +14,8 @@ import {
   Menu, 
   X,
   PackagePlus,
-  List
+  List,
+  Mail
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/components/providers/auth-provider'
@@ -30,6 +31,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: 'Crea Spedizione', href: '/dashboard/crea-spedizione', icon: PackagePlus },
     { name: 'Lista Spedizioni', href: '/dashboard/spedizioni', icon: List },
     { name: 'Analizza OCR', href: '/dashboard/ocr', icon: Camera },
+    { name: 'Servizi Postali', href: '/dashboard/admin/postale', icon: Mail },
     { name: 'Listini', href: '/listini', icon: FileText },
     { name: 'Report', href: '/dashboard/reports', icon: BarChart3, disabled: true },
     { name: 'Impostazioni', href: '/dashboard/settings', icon: Settings, disabled: true },

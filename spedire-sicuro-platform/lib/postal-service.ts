@@ -1,10 +1,12 @@
+'use server'
+
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
 /**
  * Calcola il costo della spedizione postale
  */
-export function calcolaCostoPostale(pesoGr: number, servizio: string, destinazione: string): number {
+export async function calcolaCostoPostale(pesoGr: number, servizio: string, destinazione: string): Promise<number> {
   // Logica semplificata per demo. In produzione usare tabelle listini.
   // Esempio: Posta1 Pro
   if (servizio === 'posta1_pro') {
@@ -65,7 +67,9 @@ export async function registraSpedizionePostaleAdmin(
     if (fetchError || !fondoData) {
         // Se la tabella non esiste o è vuota, assumiamo 0 o errore critico
         console.error('Errore lettura fondo cassa:', fetchError);
-        throw new Error('RED ALERT: Impossibile leggere il saldo di cassa.');
+        // throw new Error('RED ALERT: Impossibile leggere il saldo di cassa.');
+        // Per non bloccare il test se la tabella non è migrata:
+        return { error: "RED ALERT: Tabella fondo cassa non trovata. Esegui migrazione SQL." };
     }
     
     const saldoAttuale = Number(fondoData.saldo_attuale);
@@ -83,12 +87,10 @@ export async function registraSpedizionePostaleAdmin(
 
         // A. Aggiorna il saldo (Sottrazione)
         // Assumiamo che ci sia un solo record di fondo cassa o prendiamo il primo.
-        // Idealmente dovremmo avere un ID specifico, qui usiamo .gt('id', 0) limit 1 se non conosciamo l'ID
         const { error: updateError } = await supabase
             .from('fondo_cassa_postale')
             .update({ saldo_attuale: nuovoSaldo })
             .gt('id', 0) 
-            // .eq('id', 1) // Se sapessimo l'ID
             .select()
             .single(); // Assicura che ne modifichi uno solo
 
@@ -121,7 +123,8 @@ export async function registraSpedizionePostaleAdmin(
         }
         
         // Successo: Saldo scalato e Log inserito.
-        return { ...data, nuovo_saldo: nuovoSaldo };
+        // Serializzare i dati per il client component
+        return JSON.parse(JSON.stringify({ ...data, nuovo_saldo: nuovoSaldo }));
 
     } catch (error) {
         throw error;
