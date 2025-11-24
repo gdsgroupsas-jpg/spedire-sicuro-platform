@@ -1,18 +1,49 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 import { comparaPrezzi } from '@/lib/utils/compare-prices'
 import { ListinoCorriere } from '@/lib/types'
 
+type PriceCheckInput = {
+  cap: string
+  provincia: string
+  peso: number
+  contrassegno: string // XX.XX come stringa
+  destinatario?: string
+  indirizzo?: string
+  localita?: string
+  telefono?: string
+  contenuto?: string
+  colli?: number
+  note?: string
+  country?: string
+  email_destinatario?: string
+}
+
 export async function POST(req: NextRequest) {
   try {
-    const { peso, provincia, contrassegno } = await req.json()
+    const body = await req.json()
+    
+    // Support single object or array
+    const items: PriceCheckInput[] = Array.isArray(body) ? body : [body]
 
-    if (!peso || !provincia) {
-      return NextResponse.json(
-        { error: 'Peso e provincia sono obbligatori' },
-        { status: 400 }
-      )
+    if (!items || items.length === 0) {
+      return NextResponse.json({ error: 'Nessun dato di spedizione fornito.' }, { status: 400 })
     }
+
+    // Initialize Supabase client
+    const cookieStore = cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) { return cookieStore.get(name)?.value },
+          set(name: string, value: string, options: CookieOptions) { cookieStore.set({ name, value, ...options }) },
+          remove(name: string, options: CookieOptions) { cookieStore.set({ name, value: '', ...options }) },
+        },
+      }
+    )
 
     // Recupera tutti i listini attivi
     const { data: listini, error } = await supabase
@@ -21,17 +52,12 @@ export async function POST(req: NextRequest) {
       .eq('attivo', true)
 
     if (error) {
-      return NextResponse.json(
-        { error: 'Errore recupero listini', details: error.message },
-        { status: 500 }
-      )
+      console.error('Errore recupero listini:', error)
+      return NextResponse.json({ error: 'Errore recupero listini' }, { status: 500 })
     }
 
     if (!listini || listini.length === 0) {
-      return NextResponse.json(
-        { error: 'Nessun listino attivo trovato. Carica prima un listino.' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Nessun listino attivo trovato.' }, { status: 404 })
     }
 
     // Converti in formato tipizzato
@@ -50,53 +76,55 @@ export async function POST(req: NextRequest) {
       note: l.note,
     }))
 
-    // Calcola opzioni
-    const opzioni = comparaPrezzi(
-      listiniTipizzati,
-      Number(peso),
-      provincia,
-      Number(contrassegno || 0)
-    )
+    const results = await Promise.all(items.map(async (item) => {
+      // Esegue il calcolo del prezzo
+      const opzioni = comparaPrezzi(
+        listiniTipizzati,
+        Number(item.peso || 1),
+        item.provincia,
+        Number(item.contrassegno || 0)
+      )
 
-    // Aggiungi informazioni aggiuntive per UI
-    const opzioniConInfo = opzioni.map((opzione, index) => ({
-      ...opzione,
-      posizione: index + 1,
-      prezzoConsigliato: Number((opzione.totale * 1.35).toFixed(2)), // 35% markup
-      margine: Number((opzione.totale * 0.35).toFixed(2)),
-      marginePerc: 26.0,
-      nome: `${opzione.fornitore} - ${opzione.servizio}`,
-      tempi: '24-48h', // TODO: estrai da listino se disponibile
-      affidabilita: 4.5, // TODO: estrai da listino se disponibile
+      // Seleziona la migliore opzione (la prima perché sorted) o formatta le opzioni
+      // Qui restituiamo tutte le opzioni arricchite come nel vecchio endpoint
+      const opzioniConInfo = opzioni.map((opzione, index) => ({
+        ...opzione,
+        posizione: index + 1,
+        prezzoConsigliato: Number((opzione.totale * 1.35).toFixed(2)), // 35% markup
+        margine: Number((opzione.totale * 0.35).toFixed(2)),
+        marginePerc: 26.0,
+        nome: `${opzione.fornitore} - ${opzione.servizio}`,
+        tempi: '24-48h', 
+        affidabilita: 4.5,
+      }))
+
+      return {
+        ...item,
+        opzioni: opzioniConInfo,
+        miglior_prezzo: opzioniConInfo[0] || null
+      }
     }))
 
-    // Log operazione
-    await (supabase.from('log_operazioni') as any).insert([
-      {
-        tipo: 'COMPARE',
-        dettagli: {
-          peso,
-          provincia,
-          contrassegno,
-          opzioni_trovate: opzioni.length,
-        },
-        esito: 'success',
-      },
-    ])
+    // Log operazione (opzionale, ma utile)
+    try {
+        await (supabase.from('log_operazioni') as any).insert([
+            {
+                tipo: 'COMPARE_BATCH',
+                dettagli: {
+                    items_count: items.length,
+                    success: true
+                },
+                esito: 'success',
+            },
+        ])
+    } catch (e) {
+        console.warn('Log failed', e)
+    }
 
-    return NextResponse.json({
-      success: true,
-      opzioni: opzioniConInfo,
-    })
+    return NextResponse.json(results)
+
   } catch (error: any) {
-    console.error('Compare error:', error)
-    return NextResponse.json(
-      {
-        error: 'Errore confronto prezzi',
-        details: error.message,
-      },
-      { status: 500 }
-    )
+    console.error("Errore nel calcolo dei prezzi:", error)
+    return NextResponse.json({ error: 'Errore interno nel calcolo dei prezzi.', details: error.message }, { status: 500 })
   }
 }
-
