@@ -80,8 +80,9 @@ export function generateSpedisciCSV(spedizioni: any[]): string {
   })
 
   // Costruisci il CSV con separatore ;
+  // Nota: spedisci.online richiede punto e virgola finale nell'header
   const csvContent = [
-    headers.join(';'),
+    headers.join(';') + ';',
     ...rows.map(r => r.join(';'))
   ].join('\n')
 
