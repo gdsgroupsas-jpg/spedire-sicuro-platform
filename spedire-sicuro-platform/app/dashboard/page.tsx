@@ -6,15 +6,16 @@ import { StatCard } from '@/components/dashboard/StatCard'
 import { QuickActionCard } from '@/components/dashboard/QuickActionCard'
 import { RecentActivity } from '@/components/dashboard/RecentActivity'
 import { OpportunityMap } from '@/components/dashboard/OpportunityMap'
-import { 
-  Package, 
-  PiggyBank, 
-  FileText, 
-  Timer, 
-  Camera, 
-  Truck, 
-  BarChart3, 
-  Settings 
+import {
+  Package,
+  PiggyBank,
+  FileText,
+  Timer,
+  Camera,
+  Truck,
+  BarChart3,
+  Settings,
+  Target
 } from 'lucide-react'
 
 export default function DashboardOverview() {
@@ -141,7 +142,15 @@ export default function DashboardOverview() {
               buttonText="Vedi Listini"
               color="bg-green-50 text-green-600"
             />
-            <QuickActionCard 
+            <QuickActionCard
+              title="Pianificazione Strategica"
+              description="Gestisci mission, vision, SWOT, canvas e budget media."
+              icon={Target}
+              href="/dashboard/strategy"
+              buttonText="Vai alla Strategia"
+              color="bg-orange-50 text-orange-600"
+            />
+            <QuickActionCard
               title="Report Avanzati"
               description="Analizza le performance e i margini delle tue spedizioni."
               icon={BarChart3}
@@ -149,7 +158,7 @@ export default function DashboardOverview() {
               buttonText="Vedi Statistiche"
               color="bg-purple-50 text-purple-600"
             />
-            <QuickActionCard 
+            <QuickActionCard
               title="Impostazioni"
               description="Configura il tuo profilo e le preferenze di sistema."
               icon={Settings}
