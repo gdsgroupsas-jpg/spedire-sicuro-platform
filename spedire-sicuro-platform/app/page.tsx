@@ -1,7 +1,6 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import MarketingHome from '@/components/MarketingHome';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,7 +9,7 @@ export default async function Home() {
 
   try {
     const cookieStore = cookies();
-    
+
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -27,15 +26,14 @@ export default async function Home() {
     session = data.session;
 
   } catch (error) {
-    // Se Supabase fallisce, non mostrare pagina errore, mostra la Home Marketing
     console.error("⚠️ Errore check sessione home:", error);
   }
 
-  // Redirect SOLO se siamo sicuri al 100% della sessione
+  // Se c'è una sessione, vai alla dashboard
   if (session) {
     redirect('/dashboard');
   }
 
-  // Altrimenti mostra la Home Marketing
-  return <MarketingHome />;
+  // Altrimenti vai al login
+  redirect('/login');
 }
