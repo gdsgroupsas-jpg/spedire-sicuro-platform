@@ -5,7 +5,7 @@ import { comparaPrezzi } from '@/lib/utils/compare-prices'
 import type { ListinoCorriere, OpzioneCorriere } from '@/lib/types'
 import type { TablesInsert } from '@/lib/database.types'
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY ?? process.env.GOOGLE_API_KEY
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY
 const GEMINI_MODEL = process.env.GEMINI_OCR_MODEL ?? 'gemini-2.0-flash-exp'
 const geminiClient = GEMINI_API_KEY ? new GoogleGenAI({ apiKey: GEMINI_API_KEY }) : null
 
