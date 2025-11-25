@@ -1,31 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient, type SupabaseClient, type PostgrestSingleResponse } from '@supabase/supabase-js'
+import { type PostgrestSingleResponse } from '@supabase/supabase-js'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
-import type { Database, TablesInsert, Tables } from '@/lib/database.types'
-
-// Inizializza Admin Supabase client (Singleton)
-let supabaseAdmin: SupabaseClient<Database> | null = null
-
-function getSupabaseAdminClient(): SupabaseClient<Database> {
-  if (!supabaseAdmin) {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-    
-    if (!url || !serviceRoleKey) {
-      throw new Error('Configurazione Supabase Admin mancante: SUPABASE_SERVICE_ROLE_KEY richiesta')
-    }
-    
-    supabaseAdmin = createClient(url, serviceRoleKey, {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-        detectSessionInUrl: false
-      }
-    })
-  }
-  return supabaseAdmin
-}
+import { getSupabaseServerClient } from '@/lib/supabase'
+import type { TablesInsert, Tables } from '@/lib/database.types'
 
 async function checkAdminAuth(request: NextRequest) {
   const cookieStore = cookies()
@@ -99,7 +77,7 @@ export async function POST(request: NextRequest) {
   }
   
   try {
-    const client = getSupabaseAdminClient()
+    const client = getSupabaseServerClient()
 
     const formData = await request.formData()
     const fornitore = formData.get('fornitore') as string

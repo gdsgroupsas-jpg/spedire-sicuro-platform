@@ -1,10 +1,36 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from './database.types'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+let supabaseServerClient: SupabaseClient<Database> | null = null
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey)
+export type SupabaseServerClient = SupabaseClient<Database>
+
+/**
+ * Returns a singleton Supabase client that uses the service role key.
+ * This must only be imported from server environments (API routes, server actions).
+ */
+export function getSupabaseServerClient(): SupabaseServerClient {
+  if (!supabaseServerClient) {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+    if (!supabaseUrl || !serviceRoleKey) {
+      throw new Error(
+        'Supabase server client misconfigured. Ensure NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are set.'
+      )
+    }
+
+    supabaseServerClient = createClient<Database>(supabaseUrl, serviceRoleKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+      },
+    })
+  }
+
+  return supabaseServerClient
+}
 
 // Database Types
 export type Tenant = {
