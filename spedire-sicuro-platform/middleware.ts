@@ -1,12 +1,23 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
-import { NextResponse, type NextRequest } from 'next/server'
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { NextResponse, type NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
+  // 1. Escludi route pubbliche e statiche IMMEDIATAMENTE
+  if (
+    request.nextUrl.pathname === '/' ||
+    request.nextUrl.pathname.startsWith('/api') || // Lascia le API aperte per ora o gestiscile a parte
+    request.nextUrl.pathname.startsWith('/_next') ||
+    request.nextUrl.pathname.startsWith('/static') ||
+    request.nextUrl.pathname.includes('.') // File con estensione (immagini, css, ecc)
+  ) {
+    return NextResponse.next();
+  }
+
   let response = NextResponse.next({
     request: {
       headers: request.headers,
     },
-  })
+  });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -14,81 +25,44 @@ export async function middleware(request: NextRequest) {
     {
       cookies: {
         get(name: string) {
-          return request.cookies.get(name)?.value
+          return request.cookies.get(name)?.value;
         },
         set(name: string, value: string, options: CookieOptions) {
-          request.cookies.set({
-            name,
-            value,
-            ...options,
-          })
+          request.cookies.set({ name, value, ...options });
           response = NextResponse.next({
             request: {
               headers: request.headers,
             },
-          })
-          response.cookies.set({
-            name,
-            value,
-            ...options,
-          })
+          });
+          response.cookies.set({ name, value, ...options });
         },
         remove(name: string, options: CookieOptions) {
-          request.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
+          request.cookies.set({ name, value: '', ...options });
           response = NextResponse.next({
             request: {
               headers: request.headers,
             },
-          })
-          response.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
+          });
+          response.cookies.set({ name, value: '', ...options });
         },
       },
     }
-  )
+  );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession();
 
-  // Protezione rotte
-  const isProtectedRoute = 
-    request.nextUrl.pathname.startsWith('/dashboard') || 
-    request.nextUrl.pathname.startsWith('/listini')
-
-  const isAuthRoute = 
-    request.nextUrl.pathname.startsWith('/login') || 
-    request.nextUrl.pathname.startsWith('/register')
-
-  // Se l'utente NON è loggato e tenta di accedere a rotte protette
-  if (!user && isProtectedRoute) {
-    return NextResponse.redirect(new URL('/login', request.url))
+  // 2. Protezione Route /dashboard
+  if (request.nextUrl.pathname.startsWith('/dashboard')) {
+    if (!session) {
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
   }
 
-  // Se l'utente E' loggato e tenta di accedere a login/register
-  if (user && isAuthRoute) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
-  }
-
-  return response
+  return response;
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - api (API routes) - lasciamo le API accessibili per ora, o le proteggiamo internamente
-     */
-    '/((?!_next/static|_next/image|favicon.ico|api).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
-}
+};
