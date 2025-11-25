@@ -5,7 +5,7 @@ import { comparaPrezzi } from '@/lib/utils/compare-prices'
 import type { ListinoCorriere, OpzioneCorriere } from '@/lib/types'
 import type { TablesInsert } from '@/lib/database.types'
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY ?? process.env.GOOGLE_API_KEY
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY; // Leggiamo la variabile corretta
 const GEMINI_MODEL = process.env.GEMINI_OCR_MODEL ?? 'gemini-2.0-flash-exp'
 const geminiClient = GEMINI_API_KEY ? new GoogleGenAI({ apiKey: GEMINI_API_KEY }) : null
 
@@ -294,10 +294,11 @@ export async function POST(req: NextRequest) {
   console.log('[OCR] POST request ricevuta')
 
   try {
-    if (!GEMINI_API_KEY) {
+    // 1. VERIFICA CONFIGURAZIONE CRITICA AI (FIX APPLICATO QUI)
+    if (!GEMINI_API_KEY) { // USIAMO ORA LA CHIAVE GEMINI
       console.error('[OCR] GEMINI_API_KEY mancante')
       return NextResponse.json(
-        { error: 'Configurazione API Gemini mancante. Controllare Vercel ENV vars.' },
+        { error: 'Configurazione API GEMINI mancante. Controllare Vercel ENV vars.' },
         { status: 500 }
       )
     }
