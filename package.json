@@ -1,5 +1,16 @@
 {
+  "name": "spedire-sicuro-platform",
+  "version": "1.0.0",
+  "description": "Piattaforma intelligente per la gestione e l'ottimizzazione delle spedizioni con AI",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
   "dependencies": {
     "@supabase/ssr": "^0.7.0"
-  }
+  },
+  "devDependencies": {}
 }
