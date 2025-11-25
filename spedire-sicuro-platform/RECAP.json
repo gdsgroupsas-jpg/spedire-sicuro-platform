@@ -11,13 +11,13 @@
     "language": "TypeScript",
     "styling": "Tailwind CSS + shadcn/ui",
     "database": "Supabase (PostgreSQL)",
-    "ai": "Claude Sonnet 4 (Anthropic)",
+    "ai": "Google Gemini 2.0 Flash (Vision)",
     "deploy": "Vercel"
   },
   "features_implemented": {
     "ocr": {
       "status": "✅ Completato",
-      "description": "OCR tramite Claude Vision API per estrarre dati da screenshot WhatsApp",
+      "description": "OCR tramite Google Gemini Vision API per estrarre dati da screenshot WhatsApp",
       "endpoint": "/api/ocr",
       "saves_to_db": true
     },
@@ -98,7 +98,7 @@
     "ocr": {
       "path": "/api/ocr",
       "method": "POST",
-      "description": "Elabora screenshot WhatsApp con Claude Vision",
+      "description": "Elabora screenshot WhatsApp con Gemini Vision",
       "request": {
         "body": {
           "image": "base64 string"
@@ -264,7 +264,7 @@
       "@supabase/supabase-js@^2.39.0"
     ],
     "ai": [
-      "@anthropic-ai/sdk@^0.9.1"
+      "@google/generative-ai@^0.24.1"
     ],
     "parsing": [
       "xlsx@^0.18.5",
@@ -284,9 +284,9 @@
   "environment_variables": {
     "required": [
       {
-        "name": "ANTHROPIC_API_KEY",
-        "description": "API Key per Claude Vision",
-        "example": "sk-ant-..."
+        "name": "GOOGLE_API_KEY",
+        "description": "API Key per Gemini Vision",
+        "example": "AIzaSyA..."
       },
       {
         "name": "NEXT_PUBLIC_SUPABASE_URL",

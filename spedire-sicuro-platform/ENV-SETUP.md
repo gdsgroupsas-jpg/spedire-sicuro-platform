@@ -37,12 +37,13 @@ La chiave `NEXT_PUBLIC_SUPABASE_ANON_KEY` nel file è **incompleta** (troncata).
 ## 📋 Contenuto File .env.local
 
 ```bash
-# Anthropic Claude API Key
-ANTHROPIC_API_KEY=your_anthropic_api_key_here
+# Google Gemini Vision API Key
+GOOGLE_API_KEY=your_google_ai_studio_key
 
 # Supabase Configuration
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
 ```
 
 ## ✅ Verifica
@@ -54,7 +55,7 @@ cd spedire-sicuro-platform
 Get-Content .env.local
 ```
 
-Dovresti vedere tutte e 3 le variabili con valori completi.
+Dovresti vedere tutte le variabili con valori completi.
 
 ## 🔄 Riavvia Server
 

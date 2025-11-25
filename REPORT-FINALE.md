@@ -25,7 +25,7 @@
    - Indicava problemi critici nell'applicazione
 
 4. **ERRORE: Documentazione Obsoleta**
-   - `OCR-API-VERIFIED.md` menzionava Claude/Anthropic
+   - `OCR-API-VERIFIED.md` menzionava ancora il provider precedente
    - Il codice era stato migrato a Gemini ma non completato
 
 **Documenti Creati:**

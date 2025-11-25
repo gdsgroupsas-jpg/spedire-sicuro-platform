@@ -127,7 +127,7 @@ Vai su **Vercel** -> **Settings** -> **Environment Variables**. Assicurati che q
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase Settings -> API | URL del progetto |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase Settings -> API | Chiave `anon` `public` |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase Settings -> API | **NUOVA** Chiave `service_role` (secret) |
-| `ANTHROPIC_API_KEY` | Anthropic Console | Chiave `sk-...` per OCR |
+| `GOOGLE_API_KEY` | Google AI Studio | Chiave Vision per Gemini OCR |
 
 **⚠️ IMPORTANTE:** Se aggiorni le variabili, devi fare **Redeploy** (o riavviare il server locale).
 

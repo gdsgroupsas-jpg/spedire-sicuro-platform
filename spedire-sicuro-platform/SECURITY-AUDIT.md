@@ -91,7 +91,7 @@ Se accidentalmente hai committato chiavi:
    ```
 
 2. **Rigenera chiavi compromesse:**
-   - Anthropic: https://console.anthropic.com/
+   - Google AI Studio: https://aistudio.google.com/
    - Supabase: https://supabase.com/dashboard
 
 3. **Forza push (se necessario):**

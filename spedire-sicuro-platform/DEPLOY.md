@@ -18,7 +18,8 @@
    ```
    NEXT_PUBLIC_SUPABASE_URL = https://mckroxzkwagtmtmvhvvq.supabase.co
    NEXT_PUBLIC_SUPABASE_ANON_KEY = [chiedi a Salvatore]
-   ANTHROPIC_API_KEY = your_anthropic_api_key_here
+   SUPABASE_SERVICE_ROLE_KEY = [service role key]
+   GOOGLE_API_KEY = your_google_ai_studio_key
    ```
 
 4. **Deploy**
@@ -66,9 +67,9 @@ Vai su: https://supabase.com/dashboard/project/mckroxzkwagtmtmvhvvq/settings/api
 
 Copia: `anon` public key
 
-### Claude API Key
+### Google Gemini API Key
 
-Inserisci la tua chiave Anthropic API
+Inserisci la tua chiave da Google AI Studio
 
 ## ✅ Test Funzionamento
 

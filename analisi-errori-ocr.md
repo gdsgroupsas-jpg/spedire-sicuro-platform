@@ -45,40 +45,24 @@ async function callGeminiVision(base64Image: string, mediaType: string): Promise
 }
 ```
 
-**Impatto:**
-- L'OCR **NON FUNZIONA** realmente
-- Restituisce sempre gli stessi dati indipendentemente dall'immagine caricata
-- Gli utenti vedono sempre "Marco Rossi" come destinatario
+**Impatto (storico):**
+- L'OCR restituiva dati mock indipendenti dall'immagine caricata.
 
-**Soluzione:**
-Implementare la vera chiamata all'API Google Gemini Vision.
+**Stato (25/11/2025):** ✅ Risolto – `callGeminiVision()` effettua ora la chiamata reale a Google Gemini Vision; il mock è stato rimosso.
 
 ---
 
-### 3. **ERRORE: Import Anthropic Commentato**
+### 3. **ERRORE (RISOLTO): Import Provider Precedente Commentato**
 
-**Problema:**
-Alla linea 2, l'import di Anthropic è commentato:
-```typescript
-// import Anthropic from '@anthropic-ai/sdk'  <-- RIMOSSO
-```
-
-Questo indica che il progetto è stato migrato da Anthropic Claude a Google Gemini, ma la migrazione non è stata completata.
+Il vecchio import del precedente provider OCR era stato commentato durante la migrazione.  
+**Stato:** ✅ Il codice utilizza ora solo `@google/generative-ai`/fetch diretto e l'API Gemini reale.
 
 ---
 
-### 4. **ERRORE: Documentazione Obsoleta**
+### 4. **ERRORE (RISOLTO): Documentazione Obsoleta**
 
-**Problema:**
-Il file `OCR-API-VERIFIED.md` afferma che l'API OCR è "COMPLETA E FUNZIONANTE" e menziona:
-- Model: `claude-sonnet-4-20250514` (linea 22)
-- Chiamata a Claude Vision API (linea 23)
-
-Ma il codice attuale usa (o dovrebbe usare) Gemini, non Claude.
-
-**Impatto:**
-- Documentazione fuorviante
-- Confusione per sviluppatori futuri
+`OCR-API-VERIFIED.md` e gli altri README menzionavano il provider precedente.  
+**Stato:** ✅ Aggiornati per riflettere l'uso esclusivo di Google Gemini.
 
 ---
 
@@ -87,11 +71,10 @@ Ma il codice attuale usa (o dovrebbe usare) Gemini, non Claude.
 | Variabile | Stato | Ambiente |
 |-----------|-------|----------|
 | `GOOGLE_API_KEY` | ✅ Configurata | All Environments |
-| `GEMINI_API_KEY` | ✅ Configurata | All Environments |
 | `NEXT_PUBLIC_SUPABASE_URL` | ✅ Configurata | All Environments |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | ✅ Configurata | All Environments |
 
-**Nota:** La presenza di entrambe `GOOGLE_API_KEY` e `GEMINI_API_KEY` è ridondante e fonte di confusione.
+**Nota:** `GOOGLE_API_KEY` è l'unica variabile necessaria per Gemini; `GEMINI_API_KEY` è stata rimossa.
 
 ---
 
@@ -99,18 +82,11 @@ Ma il codice attuale usa (o dovrebbe usare) Gemini, non Claude.
 
 ### Priorità Alta
 
-1. **Implementare vera chiamata API Gemini**
-   - Sostituire la funzione `callGeminiVision()` con una vera chiamata HTTP all'API Google Gemini
-   - Utilizzare il formato corretto per Google AI Studio
+1. ✅ **Implementare vera chiamata API Gemini** *(completato)*
 
-2. **Standardizzare nome variabile**
-   - Decidere se usare `GOOGLE_API_KEY` o `GEMINI_API_KEY`
-   - Aggiornare codice e configurazione Vercel di conseguenza
-   - Eliminare la variabile duplicata
+2. ✅ **Standardizzare nome variabile** *(completato – rimane solo `GOOGLE_API_KEY`)*
 
-3. **Aggiornare documentazione**
-   - Correggere `OCR-API-VERIFIED.md` per riflettere l'uso di Gemini
-   - Aggiornare `.env.local.example` con il nome corretto della variabile
+3. ✅ **Aggiornare documentazione** *(completato)*
 
 ### Priorità Media
 
@@ -127,29 +103,29 @@ Ma il codice attuale usa (o dovrebbe usare) Gemini, non Claude.
 
 ## 📝 Raccomandazioni
 
-1. **Usare `GOOGLE_API_KEY`** come nome standard (è il nome ufficiale di Google)
-2. **Implementare la chiamata API reale** usando `@google/generative-ai` SDK o fetch diretto
-3. **Aggiornare tutta la documentazione** per rimuovere riferimenti a Claude/Anthropic
+1. **Usare `GOOGLE_API_KEY`** come nome standard (già applicato)
+2. **Mantenere la chiamata API reale** usando Google Gemini
+3. **Continuare ad allineare la documentazione** se cambiano le API
 4. **Testare end-to-end** prima di considerare l'API "verificata"
 
 ---
 
 ## 🚨 Messaggio di Errore Atteso
 
-Quando un utente carica uno screenshot, vedrà il messaggio:
+Quando un utente carica uno screenshot senza configurare l'API, vedrà il messaggio:
 ```
 "Configurazione API mancante"
 ```
 
-Se la variabile `GEMINI_API_KEY` non è impostata, oppure riceverà sempre gli stessi dati mock se la variabile è impostata.
+Se la variabile `GOOGLE_API_KEY` non è impostata, l'endpoint restituirà l'errore di configurazione.
 
 ---
 
 ## ✅ Prossimi Passi
 
-1. Correggere il codice dell'API OCR
-2. Aggiornare le variabili d'ambiente
-3. Testare con immagini reali
-4. Aggiornare la documentazione
+1. Correggere il codice dell'API OCR ✅
+2. Aggiornare le variabili d'ambiente ✅
+3. Testare con immagini reali ✅
+4. Aggiornare la documentazione ✅
 5. Fare commit e push su GitHub
 6. Verificare il deploy automatico su Vercel
