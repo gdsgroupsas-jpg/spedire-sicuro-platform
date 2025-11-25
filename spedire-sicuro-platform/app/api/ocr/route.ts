@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
     // Usa 'gemini-1.5-flash' per velocità/costi o 'gemini-1.5-pro' per precisione
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    const prompt = ``
+    const prompt = `
       Analizza questa etichetta di spedizione o documento logistico.
       Estrai ESATTAMENTE questi dati in formato JSON puro:
       {
