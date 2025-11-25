@@ -56,8 +56,7 @@ export async function POST(req: NextRequest) {
       },
     ]);
 
-    const response = await result.response;
-    let text = response.text();
+  let text = result.response.text(); 
     
     // Pulizia Output (rimozione markdown se presente)
     text = text.replace(/```json/g, '').replace(/```/g, '').trim();
