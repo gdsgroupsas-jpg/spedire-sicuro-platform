@@ -35,7 +35,7 @@ async function calcolaCostoPostale(
     // Query ottimizzata per trovare il COGS in base a servizio, destinazione e peso
     const { data, error } = await supabase
         .from('tariffe_postali')
-        .select('costo_base')
+        .select('costo_base, servizi_aggiuntivi_costo')
         .eq('servizio', servizio)
         .eq('destinazione', destinazione)
         .lte('peso_min_gr', pesoGr) // peso_min_gr <= pesoGr
@@ -66,9 +66,11 @@ async function calcolaCostoPostale(
         return 1.00; // Default di sicurezza basso per non bloccare
     }
     
-    // TODO: Aggiungere logica per servizi aggiuntivi (se applicabile, altrimenti solo costo_base)
-    // Cast explicitly as number since Supabase types might infer exact values but we need generic number
-    return Number((data as any).costo_base); 
+    // Calcola il costo totale includendo servizi aggiuntivi se presenti
+    const costoBase = Number((data as any).costo_base);
+    const serviziAggiuntivi = Number((data as any).servizi_aggiuntivi_costo || 0);
+
+    return costoBase + serviziAggiuntivi; 
 }
 
 
