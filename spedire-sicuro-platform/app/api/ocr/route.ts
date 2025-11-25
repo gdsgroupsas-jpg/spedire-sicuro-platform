@@ -1,372 +1,371 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { GoogleGenAI } from '@google/genai'
+import { getSupabaseServerClient, type SupabaseServerClient } from '@/lib/supabase'
 import { comparaPrezzi } from '@/lib/utils/compare-prices'
-import { ListinoCorriere } from '@/lib/types'
+import type { ListinoCorriere, OpzioneCorriere } from '@/lib/types'
+import type { TablesInsert } from '@/lib/database.types'
 
-// **********************************************
-// 1. INIZIALIZZAZIONE (GOOGLE GEMINI API)
-// **********************************************
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY ?? process.env.GOOGLE_API_KEY
+const GEMINI_MODEL = process.env.GEMINI_OCR_MODEL ?? 'gemini-2.0-flash-exp'
+const geminiClient = GEMINI_API_KEY ? new GoogleGenAI({ apiKey: GEMINI_API_KEY }) : null
 
-const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY
+const OCR_SYSTEM_PROMPT = `Sei un assistente OCR logistico per Spedire Sicuro. Devi estrarre dati di spedizioni da screenshot WhatsApp o PDF. 
+Le regole sono:
+1. Rispondi SOLO con JSON valido (nessun testo extra, niente markdown).
+2. Se un campo non è presente, restituisci null oppure un valore di default ragionevole (contrassegno=0, colli=1, peso=1.0).
+3. Normalizza i valori (provincia in maiuscolo, CAP a 5 cifre, peso numerico).
+4. Non inventare dati palesemente errati. Usa null se il dato non esiste.`
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+const OCR_RESPONSE_SCHEMA = {
+  type: 'object',
+  properties: {
+    destinatario: { type: 'string' },
+    indirizzo: { type: 'string' },
+    cap: { type: 'string' },
+    localita: { type: 'string' },
+    provincia: { type: 'string' },
+    country: { type: 'string' },
+    peso: { type: 'number' },
+    colli: { type: 'integer' },
+    contrassegno: { type: 'number' },
+    telefono: { type: 'string' },
+    email_destinatario: { type: 'string' },
+    contenuto: { type: 'string' },
+    order_id: { type: 'string' },
+    rif_mittente: { type: 'string' },
+    rif_destinatario: { type: 'string' },
+    note: { type: 'string' },
+  },
+  required: [
+    'destinatario',
+    'indirizzo',
+    'cap',
+    'localita',
+    'provincia',
+    'peso',
+    'colli',
+    'contrassegno',
+  ],
+} as const
 
-// Funzione per chiamare Google Gemini Vision API
-async function callGeminiVision(base64Image: string, mediaType: string): Promise<string> {
-    if (!GOOGLE_API_KEY) {
-        throw new Error('GOOGLE_API_KEY non configurata. Verificare le variabili d\'ambiente su Vercel.');
-    }
-    
-    console.log('[OCR-GEMINI] Chiamata a Google Gemini Vision API in corso...');
+type GeminiExtraction = Partial<{
+  destinatario: string | null
+  indirizzo: string | null
+  cap: string | null
+  localita: string | null
+  provincia: string | null
+  country: string | null
+  peso: number | string | null
+  colli: number | string | null
+  contrassegno: number | string | null
+  telefono: string | null
+  email_destinatario: string | null
+  contenuto: string | null
+  order_id: string | null
+  rif_mittente: string | null
+  rif_destinatario: string | null
+  note: string | null
+}>
 
-    // Endpoint API Google Gemini
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GOOGLE_API_KEY}`;
+type NormalizedShipmentData = {
+  destinatario: string
+  indirizzo: string
+  cap: string
+  localita: string
+  provincia: string
+  country: string
+  peso: number
+  colli: number
+  contrassegno: number
+  telefono: string | null
+  email_destinatario: string | null
+  contenuto: string | null
+  order_id: string | null
+  rif_mittente: string | null
+  rif_destinatario: string | null
+  note: string | null
+}
 
-    // Prompt ottimizzato per l'estrazione dati da screenshot WhatsApp
-    const prompt = `Analizza questo screenshot di un ordine di spedizione WhatsApp ed estrai TUTTI i dati in formato JSON puro (senza markdown).
+type ComparisonEntry = OpzioneCorriere & {
+  posizione: number
+  prezzoConsigliato: number
+  margine: number
+  marginePerc: number
+  nome: string
+  tempi: string
+  affidabilita: number
+}
 
-IMPORTANTE: Restituisci SOLO il JSON, senza testo aggiuntivo, senza \`\`\`json, senza spiegazioni.
+async function callGeminiVision(base64Image: string, mediaType: string): Promise<GeminiExtraction> {
+  if (!GEMINI_API_KEY || !geminiClient) {
+    throw new Error('GEMINI_API_KEY non configurata. Verificare le variabili di ambiente.')
+  }
 
-Campi da estrarre:
-- destinatario: nome completo del destinatario
-- indirizzo: via e numero civico
-- cap: codice postale (5 cifre)
-- localita: città
-- provincia: sigla provincia (2 lettere maiuscole)
-- country: codice paese (default "IT")
-- peso: peso in kg (numero decimale)
-- colli: numero di colli (intero)
-- contrassegno: importo contrassegno in euro (0 se non presente)
-- telefono: numero di telefono (10 cifre senza prefisso)
-- email_destinatario: email se presente, altrimenti null
-- contenuto: descrizione del contenuto
-- order_id: ID ordine se presente
-- rif_mittente: riferimento mittente se presente
-- rif_destinatario: riferimento destinatario se presente
-- note: eventuali note
+  console.log('[OCR-GEMINI] Invocazione modello tramite SDK:', GEMINI_MODEL)
 
-Esempio formato risposta:
-{
-  "destinatario": "Mario Rossi",
-  "indirizzo": "Via Roma 123",
-  "cap": "20100",
-  "localita": "Milano",
-  "provincia": "MI",
-  "country": "IT",
-  "peso": 2.5,
-  "colli": 1,
-  "contrassegno": 150.00,
-  "telefono": "3331234567",
-  "email_destinatario": null,
-  "contenuto": "Abbigliamento",
-  "order_id": "ORD-12345",
-  "rif_mittente": null,
-  "rif_destinatario": null,
-  "note": "Consegnare in orario mattutino"
-}`;
-
-    const requestBody = {
-        contents: [{
-            parts: [
-                { text: prompt },
-                {
-                    inline_data: {
-                        mime_type: mediaType,
-                        data: base64Image
-                    }
-                }
-            ]
-        }],
-        generationConfig: {
-            temperature: 0.1,
-            maxOutputTokens: 2048,
-        }
-    };
-
-    try {
-        const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
+  const response = await geminiClient.models.generateContent({
+    model: GEMINI_MODEL,
+    contents: [
+      {
+        role: 'user',
+        parts: [
+          { text: 'Analizza lo screenshot e restituisci i dati spedizione in JSON valido.' },
+          {
+            inlineData: {
+              mimeType: mediaType,
+              data: base64Image,
             },
-            body: JSON.stringify(requestBody)
-        });
+          },
+        ],
+      },
+    ],
+    config: {
+      systemInstruction: {
+        role: 'system',
+        parts: [{ text: OCR_SYSTEM_PROMPT }],
+      },
+      temperature: 0,
+      maxOutputTokens: 2048,
+      responseMimeType: 'application/json',
+      responseSchema: OCR_RESPONSE_SCHEMA as any,
+    },
+  })
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('[OCR-GEMINI] Errore API:', response.status, errorText);
-            throw new Error(`Errore API Gemini: ${response.status} - ${errorText}`);
-        }
+  const textResponse = response.text
 
-        const data = await response.json();
-        
-        if (!data.candidates || data.candidates.length === 0) {
-            throw new Error('Nessuna risposta valida da Gemini API');
-        }
+  if (!textResponse) {
+    throw new Error('Risposta Gemini vuota o non valida')
+  }
 
-        const textResponse = data.candidates[0].content.parts[0].text;
-        console.log('[OCR-GEMINI] Risposta ricevuta da Gemini');
-        
-        return textResponse;
+  try {
+    return JSON.parse(textResponse)
+  } catch (error: any) {
+    console.error('[OCR] Errore parsing JSON Gemini:', error.message)
+    console.error('[OCR] Payload ricevuto:', textResponse.substring(0, 400))
+    throw new Error(`JSON Gemini non valido: ${error.message}`)
+  }
+}
 
-    } catch (error: any) {
-        console.error('[OCR-GEMINI] Errore nella chiamata API:', error.message);
-        throw error;
+function normalizeExtraction(raw: GeminiExtraction): NormalizedShipmentData {
+  const sanitizeString = (value: unknown) =>
+    typeof value === 'string' ? value.trim() : value ? String(value) : ''
+
+  const provincia = (sanitizeString(raw.provincia) || 'NA').toUpperCase().substring(0, 2)
+  const capOnlyDigits = sanitizeString(raw.cap).replace(/\D/g, '')
+  const cap = capOnlyDigits ? capOnlyDigits.padStart(5, '0').substring(0, 5) : '80100'
+
+  const peso = Number(raw.peso)
+  const colli = Number(raw.colli)
+  const contrassegno = Number(raw.contrassegno)
+
+  return {
+    destinatario: sanitizeString(raw.destinatario) || 'Destinatario non disponibile',
+    indirizzo: sanitizeString(raw.indirizzo) || 'Indirizzo non disponibile',
+    cap,
+    localita: sanitizeString(raw.localita) || 'Napoli',
+    provincia,
+    country: (sanitizeString(raw.country) || 'IT').toUpperCase().substring(0, 2),
+    peso: Number.isFinite(peso) && peso > 0 ? Number(peso.toFixed(2)) : 1,
+    colli: Number.isFinite(colli) && colli > 0 ? Math.round(colli) : 1,
+    contrassegno: Number.isFinite(contrassegno) && contrassegno > 0 ? Number(contrassegno.toFixed(2)) : 0,
+    telefono: raw.telefono ? sanitizeString(raw.telefono) : null,
+    email_destinatario: raw.email_destinatario ? sanitizeString(raw.email_destinatario) : null,
+    contenuto: raw.contenuto ? sanitizeString(raw.contenuto) : null,
+    order_id: raw.order_id ? sanitizeString(raw.order_id) : null,
+    rif_mittente: raw.rif_mittente ? sanitizeString(raw.rif_mittente) : null,
+    rif_destinatario: raw.rif_destinatario ? sanitizeString(raw.rif_destinatario) : null,
+    note: raw.note ? sanitizeString(raw.note) : null,
+  }
+}
+
+function enrichComparison(opzioni: OpzioneCorriere[]): ComparisonEntry[] {
+  return opzioni.map((opzione, index) => {
+    const prezzoConsigliato = Number((opzione.totale * 1.35).toFixed(2))
+    const margine = Number((prezzoConsigliato - opzione.totale).toFixed(2))
+    return {
+      ...opzione,
+      posizione: index + 1,
+      prezzoConsigliato,
+      margine,
+      marginePerc: 26.0,
+      nome: `${opzione.fornitore} - ${opzione.servizio}`,
+      tempi: '24-48h',
+      affidabilita: 4.5,
     }
+  })
+}
+
+async function fetchActiveListini(client: SupabaseServerClient): Promise<ListinoCorriere[]> {
+  const { data, error } = await client.from('listini_corrieri').select('*').eq('attivo', true)
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return (data ?? []).map((listino: any) => ({
+    id: listino.id,
+    created_at: listino.created_at ?? new Date().toISOString(),
+    updated_at: listino.updated_at ?? new Date().toISOString(),
+    fornitore: listino.fornitore,
+    servizio: listino.servizio,
+    attivo: listino.attivo,
+    file_originale: listino.file_originale,
+    dati_listino: listino.dati_listino,
+    regole_contrassegno: listino.regole_contrassegno,
+    zone_coperte: listino.zone_coperte || [],
+    peso_max: listino.peso_max,
+    note: listino.note,
+  }))
+}
+
+async function persistShipment(
+  client: SupabaseServerClient,
+  extracted: NormalizedShipmentData,
+  comparison: ComparisonEntry[]
+) {
+  const payload: TablesInsert<'spedizioni'> = {
+    destinatario: extracted.destinatario,
+    indirizzo: extracted.indirizzo,
+    cap: extracted.cap,
+    localita: extracted.localita,
+    provincia: extracted.provincia,
+    country: extracted.country,
+    peso: extracted.peso,
+    colli: extracted.colli,
+    contrassegno: extracted.contrassegno,
+    telefono: extracted.telefono,
+    email_destinatario: extracted.email_destinatario,
+    contenuto: extracted.contenuto,
+    order_id: extracted.order_id,
+    rif_mittente: extracted.rif_mittente,
+    rif_destinatario: extracted.rif_destinatario,
+    note: extracted.note,
+    dati_ocr: extracted,
+    confronto_prezzi: comparison,
+  }
+
+  const { data, error } = await (client.from('spedizioni') as any).insert([payload]).select().single()
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return data
+}
+
+async function extractImagePayload(req: NextRequest) {
+  const contentType = req.headers.get('content-type') || ''
+
+  if (contentType.includes('multipart/form-data')) {
+    const formData = await req.formData()
+    const imageFile = formData.get('image') as File | null
+
+    if (!imageFile) {
+      throw new Error('Immagine mancante nel FormData')
+    }
+
+    const arrayBuffer = await imageFile.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
+    console.log(`[OCR] File ricevuto: ${imageFile.name}, ${imageFile.size} bytes, ${imageFile.type}`)
+
+    return {
+      base64Image: buffer.toString('base64'),
+      mediaType: imageFile.type || 'image/jpeg',
+    }
+  }
+
+  const body = await req.json()
+  const { image, mimeType } = body
+
+  if (!image) {
+    throw new Error('Immagine Base64 mancante nel body JSON')
+  }
+
+  const sanitized = image.replace(/^data:image\/\w+;base64,/, '')
+  console.log('[OCR] Payload JSON ricevuto, dimensione stimata:', sanitized.length)
+
+  return {
+    base64Image: sanitized,
+    mediaType: mimeType || 'image/jpeg',
+  }
 }
 
 export async function POST(req: NextRequest) {
   console.log('[OCR] POST request ricevuta')
-  
+
   try {
-    // 2. VERIFICA VARIABILE AMBIENTE GOOGLE API
-    if (!GOOGLE_API_KEY) {
-      console.error('[OCR] GOOGLE_API_KEY mancante')
+    if (!GEMINI_API_KEY) {
+      console.error('[OCR] GEMINI_API_KEY mancante')
       return NextResponse.json(
-        { error: 'Configurazione API Google mancante. Controllare Vercel ENV vars.' },
+        { error: 'Configurazione API Gemini mancante. Controllare Vercel ENV vars.' },
         { status: 500 }
       )
     }
 
-    // Verifica Supabase
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-      console.error('[OCR] Variabili Supabase mancanti')
-      return NextResponse.json(
-        { error: 'Configurazione database mancante' },
-        { status: 500 }
-      )
-    }
+    const supabase = getSupabaseServerClient()
+    const { base64Image, mediaType } = await extractImagePayload(req)
 
-    let base64Image: string
-    let imageSize: number = 0
-    let mediaType: string = 'image/jpeg' 
+    const rawExtraction = await callGeminiVision(base64Image, mediaType)
+    const extracted = normalizeExtraction(rawExtraction)
 
-    // 3. GESTIONE UPLOAD
-    const contentType = req.headers.get('content-type') || ''
-    
-    if (contentType.includes('multipart/form-data')) {
-      // Metodo preferito (FormData)
-      const formData = await req.formData()
-      const imageFile = formData.get('image') as File
-
-      if (!imageFile) {
-        return NextResponse.json(
-          { error: 'Immagine mancante nel FormData' },
-          { status: 400 }
-        )
-      }
-      
-      imageSize = imageFile.size
-      mediaType = imageFile.type || 'image/jpeg'
-      const arrayBuffer = await imageFile.arrayBuffer()
-      const buffer = Buffer.from(arrayBuffer)
-      base64Image = buffer.toString('base64')
-      
-      console.log(`[OCR] File ricevuto: ${imageFile.name}, ${imageSize} bytes, ${mediaType}`)
-      
-    } else {
-      // Supporto per il vecchio metodo JSON (Base64)
-      const body = await req.json()
-      const { image, mimeType } = body 
-      
-      if (!image) {
-        return NextResponse.json(
-          { error: 'Immagine Base64 mancante nel body JSON' },
-          { status: 400 }
-        )
-      }
-      
-      base64Image = image.replace(/^data:image\/\w+;base64,/, '')
-      imageSize = Math.round((base64Image.length * 3) / 4) 
-      mediaType = mimeType || 'image/jpeg'
-      
-      console.log(`[OCR] JSON ricevuto, dimensione stimata: ${imageSize} bytes`)
-    }
-    
-    if (!base64Image || base64Image.length === 0) {
-      return NextResponse.json(
-        { error: 'Immagine non valida' },
-        { status: 400 }
-      )
-    }
-    
-    // 4. ESECUZIONE AI (Chiamata reale a Google Gemini)
-    const responseText = await callGeminiVision(base64Image, mediaType);
-    
-    // 5. PARSING E NORMALIZZAZIONE
-    let jsonText = responseText.trim()
-    // Rimuovi eventuali markdown
-    jsonText = jsonText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-    
-    let extracted: any
-    try {
-      extracted = JSON.parse(jsonText)
-      console.log('[OCR] JSON parsato con successo')
-    } catch (parseError: any) {
-      console.error('[OCR] Errore parsing JSON:', parseError.message)
-      console.error('[OCR] Testo ricevuto:', jsonText.substring(0, 500))
-      throw new Error(`Errore parsing risposta AI: ${parseError.message}`)
-    }
-    
-    // NORMALIZZAZIONE DATI
-    if (!extracted.provincia || extracted.provincia.length !== 2) {
-      extracted.provincia = 'NA'
-    } else {
-      extracted.provincia = extracted.provincia.toUpperCase().substring(0, 2)
-    }
-    
-    if (!extracted.cap || extracted.cap.length !== 5) {
-      extracted.cap = '80100'
-    } else {
-      extracted.cap = String(extracted.cap).padStart(5, '0').substring(0, 5)
-    }
-    
-    if (!extracted.peso || extracted.peso === 0) {
-      extracted.peso = 1.0
-    }
-    
-    if (!extracted.colli) {
-      extracted.colli = 1
-    }
-    
-    if (!extracted.contrassegno) {
-      extracted.contrassegno = 0
-    }
-    
-    if (!extracted.country) {
-      extracted.country = 'IT'
-    }
-    
     console.log('[OCR] Dati normalizzati:', {
       destinatario: extracted.destinatario,
       provincia: extracted.provincia,
       cap: extracted.cap,
       peso: extracted.peso,
       colli: extracted.colli,
-      contrassegno: extracted.contrassegno
+      contrassegno: extracted.contrassegno,
     })
-    
-    // 6. COMPARAZIONE PREZZI
-    console.log('[OCR] Avvio comparazione prezzi...')
-    let comparison: any[] = []
-    
+
+    let comparison: ComparisonEntry[] = []
+
     try {
-      const { data: listini, error: listiniError } = await supabase
-        .from('listini_corrieri')
-        .select('*')
-        .eq('attivo', true)
-
-      if (listiniError) {
-        console.warn('[OCR] Errore recupero listini:', listiniError.message)
-      }
-
-      if (listini && listini.length > 0) {
-        console.log(`[OCR] Trovati ${listini.length} listini attivi`)
-        
-        const listiniTipizzati: ListinoCorriere[] = listini.map((l: any) => ({
-          id: l.id, 
-          created_at: l.created_at, 
-          updated_at: l.updated_at, 
-          fornitore: l.fornitore, 
-          servizio: l.servizio, 
-          attivo: l.attivo, 
-          file_originale: l.file_originale, 
-          dati_listino: l.dati_listino, 
-          regole_contrassegno: l.regole_contrassegno, 
-          zone_coperte: l.zone_coperte || [], 
-          peso_max: l.peso_max, 
-          note: l.note,
-        }))
-
+      const listini = await fetchActiveListini(supabase)
+      if (listini.length > 0) {
+        console.log('[OCR] Listini attivi trovati:', listini.length)
         const opzioni = comparaPrezzi(
-          listiniTipizzati,
-          Number(extracted.peso),
+          listini,
+          extracted.peso,
           extracted.provincia,
-          Number(extracted.contrassegno || 0)
+          extracted.contrassegno
         )
-
-        // Calcolo Margine (Markup del 35%)
-        comparison = opzioni.map((opzione, index) => ({
-          ...opzione,
-          posizione: index + 1,
-          prezzoConsigliato: Number((opzione.totale * 1.35).toFixed(2)),
-          margine: Number(((opzione.totale * 1.35) - opzione.totale).toFixed(2)),
-          marginePerc: 26.0,
-          nome: `${opzione.fornitore} - ${opzione.servizio}`,
-          tempi: '24-48h',
-          affidabilita: 4.5,
-        }))
-        
-        console.log(`[OCR] Comparazione completata: ${comparison.length} opzioni trovate`)
+        comparison = enrichComparison(opzioni)
       } else {
-        console.log('[OCR] Nessun listino attivo trovato')
+        console.warn('[OCR] Nessun listino attivo disponibile')
       }
     } catch (compareError: any) {
       console.warn('[OCR] Errore comparazione (non bloccante):', compareError.message)
     }
-    
-    // 7. SALVATAGGIO SU SUPABASE
-    let spedizione: any = null
+
+    let spedizioneId: string | null = null
     try {
-      const { data, error: dbError } = await supabase
-        .from('spedizioni')
-        .insert([
-          {
-            ...extracted,
-            dati_ocr: extracted,
-            confronto_prezzi: comparison,
-            peso: Number(extracted.peso),
-            colli: Number(extracted.colli || 1),
-            contrassegno: Number(extracted.contrassegno || 0),
-          },
-        ])
-        .select()
-        .single()
-      
-      if (dbError) {
-        console.error('[OCR] Errore Supabase:', dbError.message)
-        // Non blocchiamo l'utente, l'estrazione è comunque riuscita
-      } else {
-        spedizione = data
-        console.log(`[OCR] Spedizione salvata con ID: ${spedizione?.id}`)
-      }
+      const spedizione = await persistShipment(supabase, extracted, comparison)
+      spedizioneId = spedizione?.id ?? null
+      console.log('[OCR] Spedizione salvata con ID:', spedizioneId)
     } catch (dbError: any) {
-      console.error('[OCR] Errore salvataggio database:', dbError.message)
+      console.error('[OCR] Salvataggio spedizione fallito:', dbError.message)
     }
-    
-    console.log('[OCR] Risposta inviata con successo')
-    
-    return NextResponse.json({
-      success: true,
-      extracted,
-      comparison,
-      spedizione_id: spedizione?.id,
-      confidence: 95,
-    }, {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    })
-    
+
+    return NextResponse.json(
+      {
+        success: true,
+        extracted,
+        comparison,
+        spedizione_id: spedizioneId,
+        confidence: 95,
+      },
+      { status: 200 }
+    )
   } catch (error: any) {
     console.error('[OCR] Errore generale:', error.message)
-    
+
     return NextResponse.json(
-      { 
-        error: 'Errore elaborazione immagine', 
+      {
+        error: 'Errore elaborazione immagine',
         details: error.message,
-        type: error.constructor.name
+        type: error.constructor?.name ?? 'Error',
       },
-      { 
-        status: 500,
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      }
+      { status: 500 }
     )
   }
 }

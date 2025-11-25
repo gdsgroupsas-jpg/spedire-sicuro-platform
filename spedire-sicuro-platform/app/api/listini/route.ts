@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { getSupabaseServerClient } from '@/lib/supabase'
 
 // GET tutti i listini
 export async function GET(req: NextRequest) {
   try {
+    const supabase = getSupabaseServerClient()
     const { searchParams } = new URL(req.url)
     const attivo = searchParams.get('attivo')
 
@@ -34,6 +35,7 @@ export async function GET(req: NextRequest) {
 // PUT aggiorna listino (attiva/disattiva o modifica)
 export async function PUT(req: NextRequest) {
   try {
+    const supabase = getSupabaseServerClient()
     const { id, attivo, dati_listino, regole_contrassegno } = await req.json()
 
     if (!id) {
@@ -73,6 +75,7 @@ export async function PUT(req: NextRequest) {
 // DELETE elimina listino
 export async function DELETE(req: NextRequest) {
   try {
+    const supabase = getSupabaseServerClient()
     const { searchParams } = new URL(req.url)
     const id = searchParams.get('id')
 
