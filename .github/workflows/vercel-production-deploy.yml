@@ -1,5 +1,6 @@
 name: Deploy to Vercel Production
 
+
 on:
   push:
     branches:
@@ -23,12 +24,15 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
+          working-directory: ./spedire-sicuro-platform
         run: npm ci
 
       - name: Run linter
+          working-directory: ./spedire-sicuro-platform
         run: npm run lint --if-present || echo "No lint script found, continuing..."
 
       - name: Build application
+          working-directory: ./spedire-sicuro-platform
         run: npm run build
         env:
           NODE_ENV: production
