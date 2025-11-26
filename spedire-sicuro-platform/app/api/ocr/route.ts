@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
         "destinatario": { "nome": "", "indirizzo": "", "citta": "", "cap": "", "nazione": "", "telefono": "", "email": "" },
         "spedizione": { "peso_kg": 0, "dimensioni_cm": { "lunghezza": 0, "larghezza": 0, "altezza": 0 } }
       }
-      Se un dato non è visibile, usa null o 0. NON aggiungere markdown (```json). Solo il JSON.
+      Se un dato non è visibile, usa null o 0. NON aggiungere markdown. Solo il JSON puro senza blocchi di codice.
     `;
 
     // 5. Chiamata AI
