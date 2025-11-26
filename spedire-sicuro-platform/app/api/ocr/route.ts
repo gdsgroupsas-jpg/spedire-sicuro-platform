@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// 1. Configurazione Sicura (Supporta entrambi i nomi)
-const API_KEY = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
+// 1. Configurazione Sicura: obbligatorio GEMINI_API_KEY per evitare fallback rischiosi
+const API_KEY = process.env.GEMINI_API_KEY;
 
 export async function POST(req: NextRequest) {
   try {
     // Check Preliminare
     if (!API_KEY) {
-      console.error("❌ CRITICAL: Nessuna API Key Google trovata.");
+      console.error("❌ CRITICAL: Variabile GEMINI_API_KEY mancante.");
       return NextResponse.json(
         { error: 'Configurazione Server Errata: API Key mancante' },
         { status: 500 }
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
         "destinatario": { "nome": "", "indirizzo": "", "citta": "", "cap": "", "nazione": "", "telefono": "", "email": "" },
         "spedizione": { "peso_kg": 0, "dimensioni_cm": { "lunghezza": 0, "larghezza": 0, "altezza": 0 } }
       }
-      Se un dato non è visibile, usa null o 0. NON aggiungere markdown (```json). Solo il JSON.
+      Se un dato non è visibile, usa null o 0. NON aggiungere markdown o blocchi di codice. Solo il JSON.
     `;
 
     // 5. Chiamata AI

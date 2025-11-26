@@ -1,10 +1,7 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
 import AuthProvider from '@/components/providers/auth-provider'
 import { GlobalAssistant } from "@/components/ai/GlobalAssistant";
 import './globals.css'
-
-const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: {
@@ -25,7 +22,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="it">
-      <body className={inter.className}>
+      <body className="font-sans antialiased bg-background text-foreground">
         <AuthProvider>
           {children}
           <GlobalAssistant />
