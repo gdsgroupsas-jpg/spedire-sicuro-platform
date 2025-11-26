@@ -118,13 +118,13 @@ export default function MarketingHome() {
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link href="/register">
-                <Button size="lg" className="bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-semibold px-8 py-6 text-lg">
+                <Button size="lg" className="bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-semibold text-lg">
                   Inizia Gratis
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               </Link>
               <Link href="/login">
-                <Button size="lg" variant="outline" className="px-8 py-6 text-lg">
+                <Button size="lg" variant="outline" className="text-lg">
                   Accedi al tuo account
                 </Button>
               </Link>
@@ -165,7 +165,7 @@ export default function MarketingHome() {
       </section>
 
       {/* Benefits Section */}
-      <section id="benefits" className="py-20 bg-gradient-to-br from-secondary to-secondary/90">
+      <section id="benefits" className="py-20 bg-secondary">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
@@ -216,13 +216,13 @@ export default function MarketingHome() {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link href="/register">
-              <Button size="lg" className="bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-semibold px-8">
+              <Button size="lg" className="bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-semibold">
                 Inizia Ora
                 <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
             </Link>
             <Link href="/login">
-              <Button size="lg" variant="outline" className="px-8">
+              <Button size="lg" variant="outline">
                 Hai già un account? Accedi
               </Button>
             </Link>
