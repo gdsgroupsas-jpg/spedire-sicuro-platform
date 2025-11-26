@@ -2,22 +2,24 @@
   "version": 2,
   "framework": "nextjs",
   "outputDirectory": ".next",
-  "rewrites": [
+  "headers": [
     {
-      "source": "/api/:path*",
-      "destination": "/api/:path*"
-    }
-  ],
-  "redirects": [
-    {
-      "source": "https://spedire-sicuro-platform-cp1g.vercel.app/:path*",
-      "destination": "https://spedire-sicuro.vercel.app/:path*",
-      "permanent": true
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
     },
     {
-      "source": "https://spedire-sicuro-platform.vercel.app/:path*",
-      "destination": "https://spedire-sicuro.vercel.app/:path*",
-      "permanent": true
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, must-revalidate"
+        }
+      ]
     }
   ]
 }
