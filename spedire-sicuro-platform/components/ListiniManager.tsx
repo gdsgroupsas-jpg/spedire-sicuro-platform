@@ -56,7 +56,7 @@ export default function ListiniManager() {
       setListini(mappedListini);
       
       // Calcolo stats live
-      const uniqueCouriers = new Set(mappedListini.map(d => d.corriere)).size;
+      const uniqueCouriers = new Set(mappedListini.map((d: ListinoRow) => d.corriere)).size;
       setStats({ total: mappedListini.length, couriers: uniqueCouriers });
     }
   };
