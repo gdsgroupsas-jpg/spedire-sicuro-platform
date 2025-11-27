@@ -222,7 +222,7 @@ curl -X POST https://spedire-sicuro.vercel.app/api/ocr \
 | **Error Rate** | ❌ 100% | ✅ < 10% (atteso) |
 | **Logging** | ⚠️ Basico | ✅ Dettagliato |
 | **Gestione Errori** | ⚠️ Parziale | ✅ Completa |
-| **Documentazione** | ❌ Obsoleta (Claude) | ✅ Aggiornata (Gemini) |
+| **Documentazione** | ❌ Obsoleta (provider precedente) | ✅ Aggiornata (Gemini) |
 
 ---
 

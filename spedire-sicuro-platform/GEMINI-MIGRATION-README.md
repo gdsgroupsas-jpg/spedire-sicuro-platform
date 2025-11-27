@@ -11,7 +11,7 @@
 *   **Chat Agent:** Funzione `chatWithAgent` pronta per l'assistente contestuale.
 
 ### 2. API Transformation
-*   **OCR Route (`app/api/ocr/route.ts`):** Migrato da Claude a Gemini. Logica di parsing JSON rafforzata. Mantiene la pipeline di integrazione prezzi interna.
+*   **OCR Route (`app/api/ocr/route.ts`):** Migrato dal provider precedente a Gemini. Logica di parsing JSON rafforzata. Mantiene la pipeline di integrazione prezzi interna.
 *   **Agent Route (`app/api/agent/route.ts`):** Nuovo endpoint per servire le richieste del Chat Agent.
 
 ### 3. UI Upgrades

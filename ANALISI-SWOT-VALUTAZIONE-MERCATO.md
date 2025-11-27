@@ -54,7 +54,7 @@
 - ❌ Nessun competitor offre OCR AI per screenshot WhatsApp
 - ❌ Nessun sistema con validazione indirizzi AI-powered
 - ❌ Nessuna piattaforma con listini dinamici database-driven
-- ❌ Limitata integrazione con Gemini/Claude per automazione
+- ❌ Limitata integrazione con Google Gemini per automazione
 
 **Opportunità:** Posizionamento come **"First Mover"** nell'AI-powered shipping management in Italia
 

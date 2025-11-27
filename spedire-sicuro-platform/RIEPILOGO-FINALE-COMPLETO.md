@@ -87,9 +87,10 @@ C:\Users\sigor\Downloads\spedire-sicuro-platform\
 3. Seleziona: `gdsgroupsas-jpg/spedire-sicuro-platform`
 4. **Environment Variables:**
    ```
-   ANTHROPIC_API_KEY=sk-ant-...
+   GOOGLE_API_KEY=AIza...
    NEXT_PUBLIC_SUPABASE_URL=https://...supabase.co
    NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+   SUPABASE_SERVICE_ROLE_KEY=service-role-key
    ```
 5. **Deploy!**
 

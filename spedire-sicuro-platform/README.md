@@ -4,7 +4,7 @@ Piattaforma intelligente per gestione spedizioni con OCR AI e comparatore prezzi
 
 ## ✨ Features
 
-- 📸 **OCR Screenshot WhatsApp** - Claude Vision legge automaticamente gli ordini
+- 📸 **OCR Screenshot WhatsApp** - Gemini Vision legge automaticamente gli ordini
 - 💰 **Comparatore Prezzi Dinamico** - Confronta automaticamente tutti i corrieri caricati
 - 📋 **Gestione Listini** - Upload CSV/Excel per aggiungere nuovi corrieri
 - 🔄 **Sistema Flessibile** - Nessun listino hard-coded, tutto gestito via database
@@ -16,7 +16,7 @@ Piattaforma intelligente per gestione spedizioni con OCR AI e comparatore prezzi
 
 - **Framework**: Next.js 14 + TypeScript
 - **Styling**: Tailwind CSS + Shadcn/ui
-- **AI**: Claude Sonnet 4 (Anthropic)
+- **AI**: Google Gemini 2.0 Flash (Vision)
 - **Database**: Supabase (PostgreSQL)
 - **Deploy**: Vercel
 
@@ -45,13 +45,14 @@ Apri [http://localhost:3000/dashboard](http://localhost:3000/dashboard)
    ```bash
    NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-   ANTHROPIC_API_KEY=your_claude_api_key
+   SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+   GOOGLE_API_KEY=your_google_ai_studio_key
    ```
 
 ## 📸 Come Funziona
 
 1. **Upload Screenshot** - Trascina screenshot ordine WhatsApp
-2. **AI Estrae Dati** - Claude Vision legge destinatario, indirizzo, peso, etc
+2. **AI Estrae Dati** - Gemini Vision estrae destinatario, indirizzo, peso, etc
 3. **Comparazione Prezzi** - Sistema confronta tutti i corrieri caricati automaticamente
 4. **Download CSV** - Scarica file pronto per Spedisci.online
 
@@ -94,7 +95,8 @@ Dalla pagina `/listini` puoi:
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-ANTHROPIC_API_KEY=your_claude_api_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+GOOGLE_API_KEY=your_google_ai_studio_key
 ```
 
 ## 📊 Struttura Database

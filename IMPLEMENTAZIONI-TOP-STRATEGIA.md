@@ -590,7 +590,7 @@ AI: *query database* "Hai fatto 23 spedizioni questa settimana,
 ```
 
 **Integrazione Tool Calling:**
-- Function calling con Gemini/Claude
+- Function calling con Google Gemini
 - Accesso API interne
 - Esecuzione azioni database
 - Generazione documenti
@@ -630,7 +630,7 @@ AI: *query database* "Hai fatto 23 spedizioni questa settimana,
 - **Function Calling:** 60-80 ore (€3.000 - €6.400)
 - **Voice Integration:** 40-50 ore (€2.000 - €4.000)
 - **Training & Fine-tuning:** €1.000 - €3.000
-- **API Costs:** €100-500/mese (Gemini/Claude)
+- **API Costs:** €100-500/mese (Gemini Vision)
 - **TOTALE:** €12.000 - €25.400
 
 ### Stima Revenue Incrementale

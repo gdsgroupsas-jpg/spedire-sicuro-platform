@@ -1,116 +1,164 @@
-"use client";
+"use client"
 
-import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase-browser';
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Upload, FileSpreadsheet, Search, Trash2, AlertCircle, CheckCircle } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { motion, AnimatePresence } from "framer-motion";
-import { formatCurrency } from '@/lib/utils';
+import { useState, useEffect, useMemo } from 'react'
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { ListinoCorriere, DatiListino } from '@/lib/types'
+import { formatCurrency } from '@/lib/utils'
+import { motion, AnimatePresence } from "framer-motion"
+import { 
+  Upload, 
+  FileSpreadsheet, 
+  Search, 
+  Trash2, 
+  AlertCircle, 
+  AlertTriangle,
+  Loader2 
+} from "lucide-react"
 
-// Tipi definiti inline per sicurezza
-type ListinoRow = {
-  id: string;
-  corriere: string;
-  nome_servizio: string;
-  peso_min: number;
-  peso_max: number;
-  prezzo: number;
-  zona: string;
-  tempi_consegna: string;
-};
+type ApiResponse = {
+  success: boolean
+  data?: ListinoCorriere[]
+  error?: string
+}
+
+const getSamplePrice = (listino: ListinoCorriere) => {
+  const data = listino.dati_listino as DatiListino | undefined
+  if (!data || !Array.isArray(data.fasce) || data.fasce.length === 0) return null
+  const firstFascia = data.fasce[0]
+  if (!firstFascia?.prezzi) return null
+  if (firstFascia.prezzi.italia) return firstFascia.prezzi.italia
+  const [firstZone] = Object.keys(firstFascia.prezzi)
+  return firstZone ? firstFascia.prezzi[firstZone] : null
+}
 
 export default function ListiniManager() {
-  const supabase = createClient();
-  const [isUploading, setIsUploading] = useState(false);
-  const [listini, setListini] = useState<ListinoRow[]>([]);
-  const [search, setSearch] = useState("");
-  const [stats, setStats] = useState({ total: 0, couriers: 0 });
-
-  const fetchListini = async () => {
-    const { data, error } = await supabase
-      .from('listini_corrieri')
-      .select('*')
-      .order('prezzo', { ascending: true }); // Default sort by cheapest
-
-    if (data) {
-      // Map Supabase data to ListinoRow
-      // Assuming Supabase schema matches or needs mapping
-      // Based on schema: corriere, nome_servizio (or servizio), zona (or zone_coperte array?), peso_min, peso_max, prezzo (or inside fasce?)
-      // The schema in types.ts is complex (JSONB for dati_listino). 
-      // The new simplified schema proposed in supabase-fix.sql matches ListinoRow better.
-      // If the new schema is applied, data will match directly.
-      // If not, this might break until migration is run.
-      // Let's assume the migration WILL be run.
-      const mappedListini = data.map((d: any) => ({
-          id: d.id,
-          corriere: d.corriere,
-          nome_servizio: d.nome_servizio || d.servizio,
-          peso_min: d.peso_min,
-          peso_max: d.peso_max,
-          prezzo: d.prezzo,
-          zona: d.zona || 'ITA',
-          tempi_consegna: d.tempi_consegna
-      }));
-      setListini(mappedListini);
-      
-      // Calcolo stats live
-      const uniqueCouriers = new Set(mappedListini.map(d => d.corriere)).size;
-      setStats({ total: mappedListini.length, couriers: uniqueCouriers });
-    }
-  };
+  const [file, setFile] = useState<File | null>(null)
+  const [fornitore, setFornitore] = useState('')
+  const [servizio, setServizio] = useState('')
+  const [uploading, setUploading] = useState(false)
+  const [listini, setListini] = useState<ListinoCorriere[]>([])
+  const [loading, setLoading] = useState(true)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [showUpload, setShowUpload] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    fetchListini();
-  }, []);
+    loadListini()
+  }, [])
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setIsUploading(true);
-    const formData = new FormData();
-    formData.append('file', file);
+  const loadListini = async () => {
+    setLoading(true)
+    setError(null)
+    setListini([])
 
     try {
-      // Usiamo l'API server-side per parsing sicuro
+      const res = await fetch('/api/listini')
+      if (!res.ok) {
+        const errorBody = await res.text().catch(() => 'Nessun dettaglio disponibile.')
+        throw new Error(
+          `Errore HTTP ${res.status}: Impossibile recuperare i listini. Server side fail? Dettagli: ${errorBody.substring(0, 100)}...`
+        )
+      }
+
+      const data: ApiResponse = await res.json()
+
+      if (data.success) {
+        setListini(data.data || [])
+      } else {
+        throw new Error(`API Response Error: ${data.error || 'Dati non validi o campo success: false.'}`)
+      }
+    } catch (e: any) {
+      console.error('Errore CRITICO caricamento listini:', e)
+      setError(e.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const deleteListino = async (id: string) => {
+    if (!confirm('Sei sicuro di voler eliminare questo listino?')) return
+    try {
+      setError(null)
+      const res = await fetch(`/api/listini?id=${id}`, { method: 'DELETE' })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(body.error || 'Eliminazione fallita')
+      await loadListini()
+    } catch (e: any) {
+      setError(e.message || 'Errore eliminazione listino')
+    }
+  }
+
+  const toggleAttivo = async (id: string, attivo: boolean) => {
+    try {
+      setError(null)
+      const res = await fetch('/api/listini', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, attivo: !attivo }),
+      })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(body.error || 'Aggiornamento fallito')
+      await loadListini()
+    } catch (e: any) {
+      setError(e.message || 'Errore aggiornamento stato listino')
+    }
+  }
+
+  const handleUpload = async () => {
+    if (!file || !fornitore || !servizio) {
+      setError('Compila fornitore, servizio e seleziona un file.')
+      return
+    }
+
+    setUploading(true)
+    setError(null)
+
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('fornitore', fornitore)
+    formData.append('servizio', servizio)
+
+    try {
       const response = await fetch('/api/listini/upload', {
         method: 'POST',
         body: formData,
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) throw new Error(result.error || 'Upload fallito');
-
-      await fetchListini();
-      alert(`✅ Successo! Importate ${result.count} righe.`);
-    } catch (error) {
-      console.error(error);
-      alert("❌ Errore nell'upload. Verifica che il CSV abbia le colonne: peso_min, peso_max, prezzo, corriere.");
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Upload fallito')
+      alert(`✅ Successo! Importate ${result?.data?.fasce_count ?? 0} fasce.`)
+      setFile(null)
+      setFornitore('')
+      setServizio('')
+      setShowUpload(false)
+      await loadListini()
+    } catch (e: any) {
+      console.error(e)
+      setError(e.message || 'Errore durante upload listino.')
     } finally {
-      setIsUploading(false);
-      // Reset input
-      e.target.value = "";
+      setUploading(false)
     }
-  };
+  }
 
-  const filteredListini = listini.filter(l => 
-    (l.corriere && l.corriere.toLowerCase().includes(search.toLowerCase())) ||
-    (l.nome_servizio && l.nome_servizio.toLowerCase().includes(search.toLowerCase())) ||
-    (l.zona && l.zona.toLowerCase().includes(search.toLowerCase()))
-  );
+  const stats = useMemo(() => {
+    const couriers = new Set(listini.map(l => l.fornitore)).size
+    return {
+      total: listini.length,
+      couriers,
+    }
+  }, [listini])
 
-  const handleDeleteAll = async () => {
-    if(!confirm("Sei sicuro? Cancellerai TUTTI i listini.")) return;
-    await supabase.from('listini_corrieri').delete().neq('id', '00000000-0000-0000-0000-000000000000'); // Trick per delete all
-    await fetchListini();
-  };
+  const filteredListini = useMemo(() => {
+    if (!Array.isArray(listini)) return []
+    return listini.filter(l =>
+      `${l.fornitore} ${l.servizio}`.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  }, [listini, searchTerm])
 
   return (
-    <div className="space-y-6">
-      
+    <div className="space-y-8">
       {/* Header & Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="bg-amber-50 border-amber-200">
@@ -135,113 +183,187 @@ export default function ListiniManager() {
             </div>
           </CardContent>
         </Card>
-        
-        <Card className="border-dashed border-2 border-gray-300 hover:border-amber-500 transition-colors cursor-pointer relative overflow-hidden group">
-          <input 
-            type="file" 
-            accept=".csv,.xlsx" 
-            onChange={handleFileUpload}
-            disabled={isUploading}
-            className="absolute inset-0 opacity-0 cursor-pointer z-20 w-full h-full"
-          />
-          <CardContent className="p-0 h-full flex flex-col items-center justify-center text-gray-500 group-hover:text-amber-600 group-hover:bg-amber-50/50 transition-all">
-            {isUploading ? (
-              <div className="flex flex-col items-center animate-pulse">
-                <Upload className="h-8 w-8 mb-2 animate-bounce" />
-                <span className="font-medium">AI Processing...</span>
-              </div>
-            ) : (
-              <>
-                <Upload className="h-8 w-8 mb-2" />
-                <span className="font-medium">Carica CSV Listino</span>
-                <span className="text-xs text-gray-400 mt-1">Drag & Drop supportato</span>
-              </>
-            )}
-          </CardContent>
+        <Card className="border-dashed border-2 border-gray-300 flex items-center justify-center text-center">
+          <div className="space-y-2">
+            <p className="text-sm text-gray-500">Nuovo listino</p>
+            <Button variant="outline" onClick={() => setShowUpload(v => !v)}>
+              <Upload className="h-4 w-4 mr-2" />
+              {showUpload ? 'Chiudi upload' : 'Carica CSV'}
+            </Button>
+          </div>
         </Card>
       </div>
 
       {/* Tools Bar */}
-      <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm border">
+      <div className="flex flex-col md:flex-row gap-4 md:items-center bg-white p-4 rounded-lg shadow-sm border">
         <div className="relative w-full max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input 
-            placeholder="Cerca per corriere, zona o servizio..." 
+          <Input
+            placeholder="Cerca per corriere o servizio..."
             className="pl-10"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <Button variant="destructive" size="sm" onClick={handleDeleteAll}>
-          <Trash2 className="h-4 w-4 mr-2" /> Reset Listini
+        <Button variant="outline" size="sm" onClick={loadListini}>
+          <Loader2 className="h-4 w-4 mr-2" /> Aggiorna
         </Button>
       </div>
 
-      {/* Data Table */}
-      <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-gray-50 text-gray-700 font-semibold uppercase text-xs">
-              <tr>
-                <th className="px-6 py-3">Corriere</th>
-                <th className="px-6 py-3">Servizio</th>
-                <th className="px-6 py-3">Zona</th>
-                <th className="px-6 py-3 text-center">Peso (Kg)</th>
-                <th className="px-6 py-3 text-right">Prezzo</th>
-                <th className="px-6 py-3 text-right">Consegna</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              <AnimatePresence>
-                {filteredListini.map((row) => (
-                  <motion.tr 
-                    key={row.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="px-6 py-3 font-medium text-gray-900">
-                      <div className="flex items-center gap-2">
-                        {/* Logo placeholder dinamico */}
-                        <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center text-[10px] font-bold text-gray-600">
-                          {row.corriere ? row.corriere.substring(0,2) : '??'}
-                        </div>
-                        {row.corriere}
-                      </div>
-                    </td>
-                    <td className="px-6 py-3 text-gray-600">{row.nome_servizio}</td>
-                    <td className="px-6 py-3">
-                      <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
-                        {row.zona}
-                      </span>
-                    </td>
-                    <td className="px-6 py-3 text-center text-gray-500">
-                      {row.peso_min} - {row.peso_max}
-                    </td>
-                    <td className="px-6 py-3 text-right font-bold text-amber-600">
-                      {formatCurrency(row.prezzo)}
-                    </td>
-                    <td className="px-6 py-3 text-right text-gray-500">
-                      {row.tempi_consegna || "24/48h"}
-                    </td>
-                  </motion.tr>
-                ))}
-              </AnimatePresence>
-              {filteredListini.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="text-center py-12 text-gray-400">
-                    <div className="flex flex-col items-center">
-                      <AlertCircle className="h-10 w-10 mb-2 opacity-20" />
-                      <p>Nessun listino trovato</p>
-                    </div>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+      {/* Upload form */}
+      {showUpload && (
+        <div className="bg-white border rounded-xl p-6 shadow-sm space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Input
+              placeholder="Fornitore"
+              value={fornitore}
+              onChange={(e) => setFornitore(e.target.value)}
+            />
+            <Input
+              placeholder="Servizio"
+              value={servizio}
+              onChange={(e) => setServizio(e.target.value)}
+            />
+            <Input
+              type="file"
+              accept=".csv,.xlsx"
+              onChange={(e) => setFile(e.target.files?.[0] || null)}
+            />
+          </div>
+          <div className="flex gap-3">
+            <Button onClick={handleUpload} disabled={uploading}>
+              {uploading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Carica listino
+            </Button>
+            <Button variant="ghost" onClick={() => { setFile(null); setFornitore(''); setServizio('') }}>
+              <Trash2 className="h-4 w-4 mr-2" /> Reset
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Listini Grid */}
+      {error ? (
+        <div className="text-center py-16 bg-red-50 rounded-xl border-2 border-red-300 shadow-xl">
+          <AlertTriangle className="h-10 w-10 text-red-600 mx-auto mb-4" />
+          <h3 className="text-xl font-bold text-red-800">☠️ Errore Critico di Caricamento Dati ☠️</h3>
+          <p className="text-red-700 max-w-lg mx-auto mt-2 text-sm">
+            Impossibile recuperare i listini corrieri: <span className="font-mono break-all">{error}</span>
+          </p>
+          <p className="text-sm text-red-600 mt-2">
+            Verifica lo stato dell'API `/api/listini` e la tua connessione DB.
+          </p>
+          <Button
+            variant="outline"
+            className="mt-4 border-red-400 text-red-600 hover:bg-red-100"
+            onClick={loadListini}
+          >
+            Riprova Caricamento
+          </Button>
+        </div>
+      ) : loading ? (
+        <div className="flex flex-col items-center justify-center py-12 text-slate-400">
+          <Loader2 className="h-10 w-10 animate-spin mb-4 text-yellow-500" />
+          <p>Caricamento listini in corso...</p>
+        </div>
+      ) : filteredListini.length === 0 ? (
+        <div className="text-center py-16 bg-white rounded-xl border border-dashed border-slate-200">
+          <AlertCircle className="h-10 w-10 text-slate-300 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-slate-700">Nessun listino trovato</h3>
+          <p className="text-sm text-slate-500 mt-2">
+            Carica un CSV oppure prova ad aggiornare la ricerca.
+          </p>
+        </div>
+      ) : (
+        <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-gray-50 text-gray-700 font-semibold uppercase text-xs">
+                <tr>
+                  <th className="px-6 py-3">Corriere</th>
+                  <th className="px-6 py-3">Servizio</th>
+                  <th className="px-6 py-3">Zone</th>
+                  <th className="px-6 py-3 text-center">Peso max</th>
+                  <th className="px-6 py-3 text-right">Prezzo indicativo</th>
+                  <th className="px-6 py-3 text-right">Stato</th>
+                  <th className="px-6 py-3 text-right">Azioni</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                <AnimatePresence>
+                  {filteredListini.map((listino) => {
+                    const samplePrice = getSamplePrice(listino)
+                    return (
+                      <motion.tr
+                        key={listino.id}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="hover:bg-gray-50 transition-colors cursor-pointer"
+                        onClick={() => setExpandedId(expandedId === listino.id ? null : listino.id)}
+                      >
+                        <td className="px-6 py-3 font-medium text-gray-900">{listino.fornitore}</td>
+                        <td className="px-6 py-3 text-gray-600">{listino.servizio}</td>
+                        <td className="px-6 py-3">
+                          <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
+                            {(listino.zone_coperte || []).slice(0, 2).join(', ') || 'Italia'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-3 text-center text-gray-500">
+                          {listino.peso_max ? `${listino.peso_max} kg` : 'N/D'}
+                        </td>
+                        <td className="px-6 py-3 text-right font-bold text-amber-600">
+                          {samplePrice ? formatCurrency(samplePrice as number) : 'N/D'}
+                        </td>
+                        <td className="px-6 py-3 text-right">
+                          <span className={`px-2 py-1 rounded text-xs font-semibold ${listino.attivo ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-600'}`}>
+                            {listino.attivo ? 'Attivo' : 'Bozza'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-3 text-right space-x-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              toggleAttivo(listino.id, listino.attivo)
+                            }}
+                          >
+                            {listino.attivo ? 'Disattiva' : 'Attiva'}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              deleteListino(listino.id)
+                            }}
+                          >
+                            Elimina
+                          </Button>
+                        </td>
+                      </motion.tr>
+                    )
+                  })}
+                </AnimatePresence>
+                {expandedId && (
+                  <tr className="bg-slate-50">
+                    <td colSpan={7} className="px-6 py-4 text-sm text-slate-600">
+                      <pre className="text-xs bg-white border rounded p-4 overflow-auto max-h-64">
+                        {JSON.stringify(
+                          filteredListini.find((l) => l.id === expandedId)?.dati_listino,
+                          null,
+                          2
+                        )}
+                      </pre>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
-  );
+  )
 }

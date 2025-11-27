@@ -6,9 +6,10 @@
 
 **Contenuto richiesto:**
 ```bash
-ANTHROPIC_API_KEY=your_anthropic_api_key_here
+GOOGLE_API_KEY=your_google_ai_studio_key
 NEXT_PUBLIC_SUPABASE_URL=https://mckroxzkwagtmtmvhvvq.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=[LA TUA CHIAVE QUI]
+SUPABASE_SERVICE_ROLE_KEY=[LA TUA CHIAVE QUI]
 ```
 
 **Come verificare:**
@@ -117,7 +118,7 @@ peso_min;peso_max;italia;sardegna;sicilia;calabria
 | "Nessun listino attivo" | Carica almeno un listino da `/listini` |
 | Errore Supabase | Verifica URL e Anon Key in `.env.local` |
 | Server non parte | Verifica di essere in `spedire-sicuro-platform` |
-| OCR non funziona | Verifica `ANTHROPIC_API_KEY` in `.env.local` |
+| OCR non funziona | Verifica `GOOGLE_API_KEY` in `.env.local` |
 
 ## 📞 Support
 

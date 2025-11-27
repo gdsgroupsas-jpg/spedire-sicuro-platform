@@ -17,7 +17,8 @@ Crea un file `.env.local` nella root del progetto:
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-ANTHROPIC_API_KEY=sk-ant-...
+SUPABASE_SERVICE_ROLE_KEY=xxxx-service-role-key
+GOOGLE_API_KEY=sk-google-ai-...
 ```
 
 ### 3. Installazione Dipendenze
@@ -85,14 +86,14 @@ peso_min;peso_max;italia;sardegna;sicilia;calabria
 → Controlla le variabili ambiente in `.env.local`
 
 ### Errore OCR
-→ Verifica che l'API key di Anthropic sia corretta
+→ Verifica che l'API key di Google Gemini sia corretta
 
 ## 📁 Struttura File
 
 ```
 /app
   /api
-    /ocr          # API OCR con Claude Vision
+    /ocr          # API OCR con Google Gemini Vision
     /compare      # Comparatore prezzi dinamico
     /listini      # Gestione listini (GET/PUT/DELETE)
     /listini/upload # Upload listini

@@ -5,7 +5,7 @@
 **Reference:** Review of `SECURITY-AUDIT.md` and applied Code/SQL Migrations.
 
 ## 📊 Executive Summary
-L'audit ha verificato le misure di sicurezza implementate dall'agente "Claude Code". Il lavoro strutturale è **SOLIDO**, con un eccellente uso delle **Viste Protette (Secure Views)** per il data masking. Tuttavia, è stata rilevata una vulnerabilità logica nelle policy RLS (Row Level Security) del modulo postale che richiede attenzione immediata se la piattaforma prevede utenti non-admin.
+L'audit ha verificato le misure di sicurezza implementate dall'agente precedente. Il lavoro strutturale è **SOLIDO**, con un eccellente uso delle **Viste Protette (Secure Views)** per il data masking. Tuttavia, è stata rilevata una vulnerabilità logica nelle policy RLS (Row Level Security) del modulo postale che richiede attenzione immediata se la piattaforma prevede utenti non-admin.
 
 ---
 
@@ -14,7 +14,7 @@ L'audit ha verificato le misure di sicurezza implementate dall'agente "Claude Co
 ### 1. Protezione Dati Sensibili (✅ VALIDATO)
 - **Git Hygiene:** Confermo che `.env.local` e altri file sensibili sono correttamente ignorati.
 - **Hardcoded Keys:** La scansione dei file di documentazione (`ENV-SETUP.md`, `DEPLOY.md`) conferma la rimozione di chiavi API esposte.
-- **Environment Variables:** L'applicazione ora crasha in modo controllato (fail-safe) se mancano chiavi critiche come `GEMINI_API_KEY` o `SUPABASE_URL`, prevenendo comportamenti indefiniti.
+- **Environment Variables:** L'applicazione ora crasha in modo controllato (fail-safe) se mancano chiavi critiche come `GOOGLE_API_KEY` o `SUPABASE_URL`, prevenendo comportamenti indefiniti.
 
 ### 2. Database & Data Isolation (✅ VALIDATO CON NOTE)
 L'implementazione in `supabase/security_updates_v2.sql` è eccellente:
@@ -50,7 +50,7 @@ FOR ALL USING (
 ```
 
 ## 🏁 Conclusion
-Il lavoro di hardening eseguito da Claude è di alta qualità e pone basi solide. Con la correzione delle policy RLS sul modulo postale, la piattaforma raggiunge uno standard di sicurezza Enterprise-Grade.
+Il lavoro di hardening eseguito dal team precedente è di alta qualità e pone basi solide. Con la correzione delle policy RLS sul modulo postale, la piattaforma raggiunge uno standard di sicurezza Enterprise-Grade.
 
 **Validation Status:** `PASSED_WITH_WARNINGS`
 **Signature:** *Gemini (Cursor Agent)*

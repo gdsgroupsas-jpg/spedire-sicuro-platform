@@ -65,5 +65,5 @@ Per verificare la nuova pipeline:
 *   `vercel.json` (Infrastructure: Fixed Redirects 308)
 
 ## 🔜 NEXT STEPS
-*   Sostituire la funzione `callExternalAI` in `app/api/ocr/route.ts` con la chiamata reale ad Anthropic/Gemini una volta validato il flusso dei prezzi.
+*   Sostituire la funzione `callExternalAI` in `app/api/ocr/route.ts` con la chiamata reale a Google Gemini una volta validato il flusso dei prezzi.
 *   Implementare test di unità per `comparePrices`.

@@ -76,7 +76,7 @@ git reset HEAD .env.local 2>/dev/null || true
 git commit -m "feat: Sistema listini dinamico v2.0
 
 Features:
-- OCR con Claude Vision API
+- OCR con Google Gemini Vision API
 - Upload e gestione listini CSV/Excel dinamici
 - Comparatore prezzi da database
 - Export CSV formato spedisci.online

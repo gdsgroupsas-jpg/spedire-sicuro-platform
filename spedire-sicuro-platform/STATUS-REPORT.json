@@ -60,7 +60,7 @@
       "installed": true,
       "node_modules_count": 188,
       "key_packages": [
-        "@anthropic-ai/sdk",
+        "@google/generative-ai",
         "@supabase/supabase-js",
         "xlsx",
         "csv-parse",
@@ -92,7 +92,7 @@
       "location": "spedire-sicuro-platform/.env.local",
       "status": "MISSING",
       "content_template": {
-        "ANTHROPIC_API_KEY": "your_anthropic_api_key_here",
+        "GOOGLE_API_KEY": "your_google_ai_studio_key_here",
         "NEXT_PUBLIC_SUPABASE_URL": "https://your-project.supabase.co",
         "NEXT_PUBLIC_SUPABASE_ANON_KEY": "GET_FROM_SUPABASE_DASHBOARD",
         "SUPABASE_SERVICE_ROLE_KEY": "OPTIONAL"
@@ -164,7 +164,7 @@
   
   "troubleshooting": {
     "if_module_not_found": {
-      "command": "npm install @anthropic-ai/sdk @supabase/supabase-js xlsx csv-parse papaparse",
+      "command": "npm install @google/generative-ai @supabase/supabase-js xlsx csv-parse papaparse",
       "reason": "Missing dependencies",
       "status": "NOT_NEEDED - Tutte installate"
     },
@@ -289,7 +289,7 @@
       "status": "PENDING - Richiede schema SQL"
     },
     "ocr_functional": {
-      "check": "Claude Vision API restituisce dati parsati",
+      "check": "Gemini Vision API restituisce dati parsati",
       "status": "READY - Richiede .env.local"
     }
   },

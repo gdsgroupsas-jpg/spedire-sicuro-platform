@@ -18,14 +18,14 @@
 - Estrae base64 da data URL per JSON
 - Logging dimensione immagine
 
-### 3. ✅ Call Anthropic Claude Vision API
-- Model: `claude-sonnet-4-20250514`
-- Max tokens: 2000
+### 3. ✅ Call Google Gemini Vision API
+- Model: `gemini-2.0-flash-exp`
+- Max tokens: 2048
 - Prompt completo con tutte le regole
-- Gestione errori API
+- Gestione errori API (status/response body)
 
 ### 4. ✅ Parse JSON response
-- Estrae JSON dalla risposta Claude
+- Estrae JSON dalla risposta Gemini
 - Rimuove markdown se presente
 - Validazione e normalizzazione campi
 - Gestione errori parsing
@@ -42,7 +42,7 @@
 - Messaggi di errore chiari
 
 ### 7. ✅ Environment Variables
-- `ANTHROPIC_API_KEY` verificata
+- `GOOGLE_API_KEY` verificata
 - `NEXT_PUBLIC_SUPABASE_URL` verificata
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` verificata
 - Verifica all'inizio della funzione
@@ -50,8 +50,8 @@
 ### 8. ✅ Detailed Logging
 - `[OCR] POST request ricevuta`
 - `[OCR] File ricevuto: {name, size, type}`
-- `[OCR] Chiamata a Claude Vision API...`
-- `[OCR] Risposta Claude ricevuta`
+- `[OCR] Chiamata a Gemini Vision API...`
+- `[OCR] Risposta Gemini ricevuta`
 - `[OCR] JSON parsato con successo`
 - `[OCR] Comparazione prezzi: X opzioni`
 - `[OCR] Spedizione salvata con ID: xxx`
@@ -77,8 +77,8 @@ Nel terminale del server dovresti vedere:
 [OCR] Content-Type: application/json
 [OCR] Ricevuto JSON
 [OCR] Base64 ricevuto, dimensione stimata: XXX bytes
-[OCR] Chiamata a Claude Vision API...
-[OCR] Risposta Claude ricevuta
+[OCR] Chiamata a Gemini Vision API...
+[OCR] Risposta Gemini ricevuta
 [OCR] JSON parsato con successo
 [OCR] Campi estratti: ['destinatario', 'indirizzo', ...]
 [OCR] Comparazione prezzi: X opzioni trovate
@@ -89,11 +89,11 @@ Nel terminale del server dovresti vedere:
 ## 🐛 Troubleshooting
 
 ### Errore: "Configurazione API mancante"
-**Causa:** `ANTHROPIC_API_KEY` non configurata
+**Causa:** `GOOGLE_API_KEY` non configurata
 **Soluzione:** Verifica `.env.local`
 
-### Errore: "Errore parsing risposta Claude"
-**Causa:** Claude non ha restituito JSON valido
+### Errore: "Errore parsing risposta AI"
+**Causa:** Gemini non ha restituito JSON valido
 **Soluzione:** Controlla log per vedere risposta raw
 
 ### Errore: "Errore Supabase"
@@ -109,7 +109,7 @@ Nel terminale del server dovresti vedere:
 - [x] Export POST function presente
 - [x] Supporto FormData e JSON
 - [x] Conversione immagine a base64
-- [x] Chiamata Claude Vision API
+- [x] Chiamata Gemini Vision API
 - [x] Parsing JSON risposta
 - [x] Salvataggio Supabase
 - [x] Logging dettagliato
